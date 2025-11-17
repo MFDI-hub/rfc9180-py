@@ -1,0 +1,46 @@
+import json
+import os
+import pytest
+
+from hpke.primitives.kdf import KDFBase
+from hpke.primitives.kem import DHKEM_X25519
+from hpke.primitives.aead import AEADBase
+from hpke.setup import HPKESetup
+from hpke.constants import KDFID, AEADID
+
+
+def load_vector(path: str):
+    if not os.path.exists(path):
+        pytest.skip(f"Vector file not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def test_vector_x25519_aes128gcm_base_decrypt():
+    """
+    Placeholder harness: loads a RFC 9180-style JSON vector and verifies decryption.
+    Skips if the vector file is missing.
+    """
+    vector_path = os.path.join("vectors", "dhkem_x25519_aes128gcm_base.json")
+    vec = load_vector(vector_path)
+
+    kdf = KDFBase(KDFID.HKDF_SHA256)
+    kem = DHKEM_X25519(kdf)
+    aead = AEADBase(AEADID.AES_128_GCM)
+    setup = HPKESetup(kem, kdf, aead)
+
+    pkR = kem.deserialize_public_key(bytes.fromhex(vec['pkRm']))
+    skR = kem.deserialize_private_key(bytes.fromhex(vec['skRm']))
+    info = bytes.fromhex(vec['info'])
+
+    enc = bytes.fromhex(vec['enc'])
+    ctx_r = setup.setup_base_recipient(enc, skR, info)
+
+    for msg in vec.get('encryptions', []):
+        aad = bytes.fromhex(msg['aad'])
+        ct = bytes.fromhex(msg['ct'])
+        pt_expected = bytes.fromhex(msg['pt'])
+        pt = ctx_r.open(aad, ct)
+        assert pt == pt_expected
+
+

@@ -1,0 +1,56 @@
+[project]
+name = "pyhpke"
+version = "0.1.0"
+description = "A Python implementation of Hybrid Public Key Encryption (HPKE) as specified in RFC 9180"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "IETF Trust" }
+authors = [
+    { name = "PyHPKE Contributors" }
+]
+keywords = ["hpke", "encryption", "rfc9180", "hybrid", "public-key", "cryptography"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Security :: Cryptography",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "cryptography>=41.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/DELL/PyHPKE"
+Documentation = "https://github.com/DELL/PyHPKE#readme"
+Repository = "https://github.com/DELL/PyHPKE"
+Issues = "https://github.com/DELL/PyHPKE/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hpke"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+]
+
