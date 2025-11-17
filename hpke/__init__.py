@@ -3,11 +3,12 @@ hpke package: Hybrid Public Key Encryption (RFC 9180) primitives and APIs.
 """
 
 from .constants import KEMID, KDFID, AEADID
-from .primitives.kem import DHKEM_X25519, DHKEM_P256
+from .primitives.kem import DHKEM_X25519, DHKEM_X448, DHKEM_P256, DHKEM_P384, DHKEM_P521
 from .primitives.kdf import KDFBase
 from .primitives.aead import AEADBase
 from .setup import HPKESetup
 from .single_shot import HPKESingleShot
+from .helpers import append_header, parse_header
 
 
 class HPKE:
@@ -20,7 +21,7 @@ class HPKE:
         self.kdf_id = kdf_id
         self.aead_id = aead_id
         self.kdf = self._create_kdf(kdf_id)
-        self.kem = self._create_kem(kem_id, self.kdf)
+        self.kem = self._create_kem(kem_id)
         self.aead = self._create_aead(aead_id)
         self.setup = HPKESetup(self.kem, self.kdf, self.aead)
         self._single_shot = HPKESingleShot(self.setup)
@@ -28,11 +29,17 @@ class HPKE:
     def _create_kdf(self, kdf_id: KDFID) -> KDFBase:
         return KDFBase(kdf_id)
 
-    def _create_kem(self, kem_id: KEMID, kdf: KDFBase):
+    def _create_kem(self, kem_id: KEMID):
         if kem_id == KEMID.DHKEM_X25519_HKDF_SHA256:
-            return DHKEM_X25519(kdf)
+            return DHKEM_X25519()
+        if kem_id == KEMID.DHKEM_X448_HKDF_SHA512:
+            return DHKEM_X448()
         if kem_id == KEMID.DHKEM_P256_HKDF_SHA256:
-            return DHKEM_P256(kdf)
+            return DHKEM_P256()
+        if kem_id == KEMID.DHKEM_P384_HKDF_SHA384:
+            return DHKEM_P384()
+        if kem_id == KEMID.DHKEM_P521_HKDF_SHA512:
+            return DHKEM_P521()
         raise ValueError(f"Unsupported KEM ID: {kem_id}")
 
     def _create_aead(self, aead_id: AEADID) -> AEADBase:
@@ -77,6 +84,8 @@ __all__ = [
     "AEADID",
     "HPKE",
     "create_hpke",
+    "append_header",
+    "parse_header",
 ]
 
 

@@ -6,18 +6,20 @@ from hpke.primitives.aead import AEADBase
 from hpke.setup import HPKESetup
 from hpke.single_shot import HPKESingleShot
 from hpke.constants import KDFID, AEADID
+import pytest
 
 
-def build_env():
+def build_env(aead_id: AEADID = AEADID.AES_128_GCM):
     kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_X25519(kdf)
-    aead = AEADBase(AEADID.AES_128_GCM)
+    kem = DHKEM_X25519()
+    aead = AEADBase(aead_id)
     setup = HPKESetup(kem, kdf, aead)
     return kem, setup
 
 
-def test_multi_message_roundtrip_base():
-    kem, setup = build_env()
+@pytest.mark.parametrize("aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305])
+def test_multi_message_roundtrip_base(aead_id):
+    kem, setup = build_env(aead_id)
     skR, pkR = kem.generate_key_pair()
     info = b"multi"
     enc, sender = setup.setup_base_sender(pkR, info)
@@ -29,8 +31,9 @@ def test_multi_message_roundtrip_base():
     assert outs == pts
 
 
-def test_exporter_values_match():
-    kem, setup = build_env()
+@pytest.mark.parametrize("aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305])
+def test_exporter_values_match(aead_id):
+    kem, setup = build_env(aead_id)
     skR, pkR = kem.generate_key_pair()
     info = b"export"
     enc, sender = setup.setup_base_sender(pkR, info)
@@ -42,7 +45,7 @@ def test_exporter_values_match():
 
 def test_export_only_flow():
     kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_X25519(kdf)
+    kem = DHKEM_X25519()
     aead = AEADBase(AEADID.EXPORT_ONLY)
     setup = HPKESetup(kem, kdf, aead)
     single = HPKESingleShot(setup)

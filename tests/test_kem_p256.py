@@ -1,13 +1,10 @@
 import pytest
 
-from hpke.primitives.kdf import KDFBase
 from hpke.primitives.kem import DHKEM_P256
-from hpke.constants import KDFID
 
 
 def test_key_generation_p256():
-    kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_P256(kdf)
+    kem = DHKEM_P256()
     sk, pk = kem.generate_key_pair()
     assert sk is not None and pk is not None
     pk_bytes = kem.serialize_public_key(pk)
@@ -15,8 +12,7 @@ def test_key_generation_p256():
 
 
 def test_derive_key_pair_p256_deterministic():
-    kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_P256(kdf)
+    kem = DHKEM_P256()
     ikm = b"P256 deterministic seed.........."[:kem.Nsk]
     sk1, pk1 = kem.derive_key_pair(ikm)
     sk2, pk2 = kem.derive_key_pair(ikm)
@@ -25,8 +21,7 @@ def test_derive_key_pair_p256_deterministic():
 
 
 def test_encap_decap_p256():
-    kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_P256(kdf)
+    kem = DHKEM_P256()
     skR, pkR = kem.generate_key_pair()
     ss_s, enc = kem.encap(pkR)
     ss_r = kem.decap(enc, skR)
@@ -35,8 +30,7 @@ def test_encap_decap_p256():
 
 
 def test_auth_encap_decap_p256():
-    kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_P256(kdf)
+    kem = DHKEM_P256()
     skR, pkR = kem.generate_key_pair()
     skS, pkS = kem.generate_key_pair()
     ss_s, enc = kem.auth_encap(pkR, skS)

@@ -10,7 +10,7 @@ from hpke.constants import KDFID, AEADID
 
 def build_env():
     kdf = KDFBase(KDFID.HKDF_SHA256)
-    kem = DHKEM_X25519(kdf)
+    kem = DHKEM_X25519()
     aead = AEADBase(AEADID.AES_128_GCM)
     setup = HPKESetup(kem, kdf, aead)
     return kem, setup

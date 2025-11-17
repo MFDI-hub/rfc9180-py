@@ -92,6 +92,18 @@ pt2 = ctx_recipient.open(aad, ct2)
   - ✅ Key derivation with rejection sampling
   - ✅ Serialization/deserialization
   - ✅ Partial public key validation
+- ✅ **DHKEM_P384_HKDF_SHA384** (0x0011): Full implementation
+  - ✅ Key generation
+  - ✅ Key derivation with rejection sampling
+  - ✅ Serialization/deserialization
+- ✅ **DHKEM_P521_HKDF_SHA512** (0x0012): Full implementation
+  - ✅ Key generation
+  - ✅ Key derivation with rejection sampling
+  - ✅ Serialization/deserialization
+- ✅ **DHKEM_X448_HKDF_SHA512** (0x0021): Full implementation
+  - ✅ Key generation
+  - ✅ Key derivation with RFC 7748 clamping
+  - ✅ Serialization/deserialization
 
 **KDFs (Section 7.2)**:
 - ✅ **HKDF_SHA256** (0x0001): Full implementation
@@ -122,13 +134,8 @@ pt2 = ctx_recipient.open(aad, ct2)
 
 ### ❌ Not Implemented
 
-#### KEMs (Section 7.1)
-- ❌ **DHKEM_P384_HKDF_SHA384** (0x0011): P-384 curve not implemented
-- ❌ **DHKEM_P521_HKDF_SHA512** (0x0012): P-521 curve not implemented
-- ❌ **DHKEM_X448_HKDF_SHA512** (0x0021): X448 not implemented
-
 #### Section 10: Message Encoding
-- ❌ **Wire Format Encoding**: The library does not implement the standardized message encoding format described in Section 10. Applications must handle their own message serialization (enc, ciphertext, etc.).
+- ✅ **Helpers Provided**: This library provides application-level helpers to encode/decode messages with a self-describing header per RFC §10 guidance. See below.
 
 #### Section 9.7: Application-Level Features (Non-Goals)
 The following are explicitly **not** provided by HPKE and must be handled by applications:
@@ -152,9 +159,18 @@ Note: These are intentional non-goals per RFC 9180 and should be handled at the 
 | P-256 | HKDF-SHA256 | AES-256-GCM | ✅ |
 | P-256 | HKDF-SHA256 | ChaCha20-Poly1305 | ✅ |
 | P-256 | HKDF-SHA256 | EXPORT_ONLY | ✅ |
-| P-384 | HKDF-SHA384 | * | ❌ |
-| P-521 | HKDF-SHA512 | * | ❌ |
-| X448 | HKDF-SHA512 | * | ❌ |
+| P-384 | HKDF-SHA384 | AES-128-GCM | ✅ |
+| P-384 | HKDF-SHA384 | AES-256-GCM | ✅ |
+| P-384 | HKDF-SHA384 | ChaCha20-Poly1305 | ✅ |
+| P-384 | HKDF-SHA384 | EXPORT_ONLY | ✅ |
+| P-521 | HKDF-SHA512 | AES-128-GCM | ✅ |
+| P-521 | HKDF-SHA512 | AES-256-GCM | ✅ |
+| P-521 | HKDF-SHA512 | ChaCha20-Poly1305 | ✅ |
+| P-521 | HKDF-SHA512 | EXPORT_ONLY | ✅ |
+| X448 | HKDF-SHA512 | AES-128-GCM | ✅ |
+| X448 | HKDF-SHA512 | AES-256-GCM | ✅ |
+| X448 | HKDF-SHA512 | ChaCha20-Poly1305 | ✅ |
+| X448 | HKDF-SHA512 | EXPORT_ONLY | ✅ |
 
 ## API Documentation
 
@@ -223,6 +239,26 @@ pytest tests/test_kem.py
 pytest tests/test_vectors.py
 ```
 
+## Section 10: Message Encoding Helpers
+
+Applications often need a wire format. This library provides simple helpers for a self-describing header:
+
+```python
+from hpke import append_header, parse_header
+from hpke.constants import HPKEMode
+
+enc, ct = hpke.seal_base(pkR, info, aad, pt)
+msg = append_header(enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), int(HPKEMode.MODE_BASE))
+kem_id2, kdf_id2, aead_id2, mode2, enc2, ct2 = parse_header(msg, enc_len=hpke.kem.Nenc)
+pt2 = hpke.open_base(enc2, skR, info, aad, ct2)
+```
+
+Note: This is an application-level format following RFC 9180 §10 guidance; applications may define alternative encodings.
+
+## KEM/KDF Decoupling
+
+Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation decouples the KEM’s internal KDF from the ciphersuite KDF used in the key schedule (§5.1): KEMs self-select their mandated hash; the suite KDF (e.g., HKDF-SHA256) is used for key schedule and exports.
+
 ## Security Considerations
 
 - **PSK Entropy**: PSKs must have at least 32 bytes of entropy (enforced)
@@ -243,7 +279,6 @@ This implementation follows the same licensing terms as RFC 9180 (IETF Trust).
 ## Contributing
 
 Contributions are welcome! Areas for improvement:
-- Additional KEM implementations (P-384, P-521, X448)
 - Performance optimizations
 - Additional test vectors
 - Documentation improvements
