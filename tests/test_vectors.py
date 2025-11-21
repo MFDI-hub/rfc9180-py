@@ -1,18 +1,19 @@
 import json
 import os
+
 import pytest
 
-from hpke.primitives.kdf import KDFBase
-from hpke.primitives.kem import DHKEM_X25519, DHKEM_P256
+from hpke.constants import AEADID, KDFID
 from hpke.primitives.aead import AEADBase
+from hpke.primitives.kdf import KDFBase
+from hpke.primitives.kem import DHKEM_P256, DHKEM_X25519
 from hpke.setup import HPKESetup
-from hpke.constants import KDFID, AEADID
 
 
 def load_vector(path: str):
     if not os.path.exists(path):
         pytest.skip(f"Vector file not found: {path}")
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -29,7 +30,6 @@ def test_vector_x25519_aes128gcm_base_decrypt():
     aead = AEADBase(AEADID.AES_128_GCM)
     setup = HPKESetup(kem, kdf, aead)
 
-    pkR = kem.deserialize_public_key(bytes.fromhex(vec['pkRm']))
     skR = kem.deserialize_private_key(bytes.fromhex(vec['skRm']))
     info = bytes.fromhex(vec['info'])
 
@@ -61,7 +61,6 @@ def test_vector_optional_matrix_base_decrypt(kem_ctor, aead_id, filename):
     aead = AEADBase(aead_id)
     setup = HPKESetup(kem, kdf, aead)
 
-    pkR = kem.deserialize_public_key(bytes.fromhex(vec['pkRm']))
     skR = kem.deserialize_private_key(bytes.fromhex(vec['skRm']))
     info = bytes.fromhex(vec['info'])
 

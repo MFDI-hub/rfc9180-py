@@ -1,7 +1,7 @@
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
-from ..constants import AEADID, AEAD_PARAMS
-from ..exceptions import OpenError, MessageLimitReachedError
+from ..constants import AEAD_PARAMS, AEADID
+from ..exceptions import MessageLimitReachedError, OpenError
 
 
 class AEADBase:
@@ -37,10 +37,10 @@ class AEADBase:
         if len(nonce) != self.Nn:
             raise ValueError(f"Invalid nonce length: {len(nonce)}")
         try:
-            return self.cipher(key).encrypt(nonce, pt, aad)
+            return self.cipher(key).encrypt(nonce, pt, aad)  # type: ignore[no-any-return]
         except Exception as e:
             # Commonly thrown when nonce reuse or limits exceeded
-            raise MessageLimitReachedError(f"Seal failed: {e}")
+            raise MessageLimitReachedError(f"Seal failed: {e}") from e
 
     def open(self, key: bytes, nonce: bytes, aad: bytes, ct: bytes) -> bytes:
         if self.aead_id == AEADID.EXPORT_ONLY:
@@ -50,8 +50,8 @@ class AEADBase:
         if len(nonce) != self.Nn:
             raise ValueError(f"Invalid nonce length: {len(nonce)}")
         try:
-            return self.cipher(key).decrypt(nonce, ct, aad)
+            return self.cipher(key).decrypt(nonce, ct, aad)  # type: ignore[no-any-return]
         except Exception as e:
-            raise OpenError(f"Decryption failed: {e}")
+            raise OpenError(f"Decryption failed: {e}") from e
 
 

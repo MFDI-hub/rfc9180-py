@@ -1,7 +1,8 @@
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF, HKDFExpand
+from cryptography.hazmat.primitives.hmac import HMAC
+from cryptography.hazmat.primitives.kdf.hkdf import HKDFExpand
 
-from ..constants import KDFID, KDF_PARAMS
+from ..constants import KDF_PARAMS, KDFID
 from ..utils import I2OSP, concat
 
 
@@ -30,13 +31,9 @@ class KDFBase:
         if not salt:
             salt = b'\x00' * self.Nh
 
-        hkdf = HKDF(
-            algorithm=self.hash_algorithm,
-            length=self.Nh,
-            salt=salt,
-            info=b'',
-        )
-        return hkdf.derive(ikm)
+        h = HMAC(salt, self.hash_algorithm)
+        h.update(ikm)
+        return h.finalize()
 
     def expand(self, prk: bytes, info: bytes, L: int) -> bytes:
         """

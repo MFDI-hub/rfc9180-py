@@ -1,8 +1,9 @@
 import secrets
+
 import pytest
 
-from hpke.primitives.aead import AEADBase
 from hpke.constants import AEADID
+from hpke.primitives.aead import AEADBase
 
 
 def test_aes128gcm_seal_open_roundtrip():

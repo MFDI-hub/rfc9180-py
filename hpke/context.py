@@ -1,9 +1,9 @@
 from typing import Literal
 
-from .utils import I2OSP, xor_bytes
 from .exceptions import MessageLimitReachedError
 from .primitives.aead import AEADBase
 from .primitives.kdf import KDFBase
+from .utils import I2OSP, xor_bytes
 
 Role = Literal['S', 'R']
 

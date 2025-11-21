@@ -1,6 +1,5 @@
-from hpke import append_header, parse_header
-from hpke.constants import KEMID, KDFID, AEADID, HPKEMode
-from hpke import HPKE
+from hpke import HPKE, append_header, parse_header
+from hpke.constants import AEADID, KDFID, KEMID, HPKEMode
 
 
 def test_header_round_trip():
@@ -27,14 +26,14 @@ def test_header_errors():
     # Too short
     try:
         parse_header(b"HPK", enc_len=32)
-        assert False, "Expected error for short header"
+        raise AssertionError("Expected error for short header")
     except ValueError:
         pass
 
     # Bad magic
     try:
         parse_header(b"NOPE" + b"\x00" * (2 + 2 + 2 + 1 + 10), enc_len=16)
-        assert False, "Expected error for bad magic"
+        raise AssertionError("Expected error for bad magic")
     except ValueError:
         pass
 

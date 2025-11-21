@@ -1,9 +1,9 @@
 import secrets
 
-from hpke.context import ContextSender, ContextRecipient
+from hpke.constants import AEADID, KDFID
+from hpke.context import ContextRecipient, ContextSender
 from hpke.primitives.aead import AEADBase
 from hpke.primitives.kdf import KDFBase
-from hpke.constants import AEADID, KDFID
 from hpke.utils import I2OSP, xor_bytes
 
 

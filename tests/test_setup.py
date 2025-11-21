@@ -1,10 +1,8 @@
-import secrets
-
+from hpke.constants import AEADID, KDFID
+from hpke.primitives.aead import AEADBase
 from hpke.primitives.kdf import KDFBase
 from hpke.primitives.kem import DHKEM_X25519
-from hpke.primitives.aead import AEADBase
 from hpke.setup import HPKESetup
-from hpke.constants import KDFID, AEADID
 
 
 def test_setup_base_roundtrip():

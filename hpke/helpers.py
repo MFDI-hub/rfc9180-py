@@ -1,4 +1,3 @@
-import struct
 from typing import Tuple
 
 from .utils import I2OSP, concat

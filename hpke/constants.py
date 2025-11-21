@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+
 # HPKE Modes (RFC 9180 §5, Table 1)
 class HPKEMode(IntEnum):
     MODE_BASE = 0x00

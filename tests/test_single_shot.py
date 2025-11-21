@@ -1,11 +1,11 @@
 import secrets
 
+from hpke.constants import AEADID, KDFID
+from hpke.primitives.aead import AEADBase
 from hpke.primitives.kdf import KDFBase
 from hpke.primitives.kem import DHKEM_X25519
-from hpke.primitives.aead import AEADBase
 from hpke.setup import HPKESetup
 from hpke.single_shot import HPKESingleShot
-from hpke.constants import KDFID, AEADID
 
 
 def build_env():

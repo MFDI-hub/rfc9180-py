@@ -1,5 +1,3 @@
-import pytest
-
 from hpke.primitives.kem import DHKEM_X25519
 
 
