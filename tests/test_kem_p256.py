@@ -1,4 +1,4 @@
-from hpke.primitives.kem import DHKEM_P256
+from rfc9180.primitives.kem import DHKEM_P256
 
 
 def test_key_generation_p256():

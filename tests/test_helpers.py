@@ -1,5 +1,5 @@
-from hpke import HPKE, append_header, parse_header
-from hpke.constants import AEADID, KDFID, KEMID, HPKEMode
+from rfc9180 import HPKE, append_header, parse_header
+from rfc9180.constants import AEADID, KDFID, KEMID, HPKEMode
 
 
 def test_header_round_trip():

@@ -1,4 +1,4 @@
-from hpke.primitives.kem import DHKEM_X25519
+from rfc9180.primitives.kem import DHKEM_X25519
 
 
 def test_key_generation_x25519():

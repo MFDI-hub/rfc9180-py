@@ -14,7 +14,7 @@ This library implements the core HPKE specification using Python's `cryptography
 - **Multiple Ciphersuites**: Support for various KEM, KDF, and AEAD combinations
 - **Single-Shot APIs**: Convenient one-call encryption/decryption
 - **Context APIs**: Multi-message encryption contexts with automatic nonce management
-- **Secret Export**: Export application secrets from HPKE contexts
+- **Secret Export**: Export application secrets from rfc9180 contexts
 - **RFC 9180 Compliant**: Follows the specification closely with proper domain separation and validation
 - **Key Management**: Key generation, derivation, and serialization utilities
 - **Message Encoding Helpers**: Self-describing message format with header encoding/parsing
@@ -30,7 +30,7 @@ The library requires Python 3.9+ and uses the `cryptography` library for all cry
 ## Quick Start
 
 ```python
-from hpke import HPKE, KEMID, KDFID, AEADID, create_hpke
+from rfc9180 import HPKE, KEMID, KDFID, AEADID, create_hpke
 
 # Create HPKE instance with default ciphersuite (X25519 + HKDF-SHA256 + AES-128-GCM)
 hpke = HPKE(KEMID.DHKEM_X25519_HKDF_SHA256, KDFID.HKDF_SHA256, AEADID.AES_128_GCM)
@@ -187,14 +187,14 @@ Note: These are intentional non-goals per RFC 9180 and should be handled at the 
 The package is installed as `rfc9180-py` but imported as `hpke`:
 
 ```python
-from hpke import HPKE, KEMID, KDFID, AEADID, create_hpke, append_header, parse_header
-from hpke.constants import HPKEMode
-from hpke.setup import HPKESetup
-from hpke.single_shot import HPKESingleShot
-from hpke.context import Context, ContextSender, ContextRecipient
-from hpke.primitives.kem import DHKEM_X25519, DHKEM_X448, DHKEM_P256, DHKEM_P384, DHKEM_P521
-from hpke.primitives.kdf import KDFBase
-from hpke.primitives.aead import AEADBase
+from rfc9180 import HPKE, KEMID, KDFID, AEADID, create_hpke, append_header, parse_header
+from rfc9180.constants import HPKEMode
+from rfc9180.setup import HPKESetup
+from rfc9180.single_shot import HPKESingleShot
+from rfc9180.context import Context, ContextSender, ContextRecipient
+from rfc9180.primitives.kem import DHKEM_X25519, DHKEM_X448, DHKEM_P256, DHKEM_P384, DHKEM_P521
+from rfc9180.primitives.kdf import KDFBase
+from rfc9180.primitives.aead import AEADBase
 ```
 
 ### High-Level API
@@ -204,7 +204,7 @@ from hpke.primitives.aead import AEADBase
 The main `HPKE` class provides a convenient interface for all HPKE operations:
 
 ```python
-from hpke import HPKE, KEMID, KDFID, AEADID
+from rfc9180 import HPKE, KEMID, KDFID, AEADID
 
 # Create HPKE instance
 hpke = HPKE(kem_id, kdf_id, aead_id)
@@ -222,7 +222,7 @@ hpke.setup     # Setup functions (HPKESetup instance)
 #### Convenience Function
 
 ```python
-from hpke import create_hpke
+from rfc9180 import create_hpke
 
 # Create with defaults (X25519 + HKDF-SHA256 + AES-128-GCM)
 hpke = create_hpke()
@@ -338,7 +338,7 @@ secret = ctx.export(exporter_context, length)
 For export-only operations without encryption:
 
 ```python
-from hpke.single_shot import HPKESingleShot
+from rfc9180.single_shot import HPKESingleShot
 
 single = HPKESingleShot(hpke.setup)
 
@@ -364,8 +364,8 @@ secret = single.receive_export_auth_psk(enc, skR, info, exporter_context, length
 Applications often need a wire format. This library provides simple helpers for a self-describing header:
 
 ```python
-from hpke import append_header, parse_header
-from hpke.constants import HPKEMode
+from rfc9180 import append_header, parse_header
+from rfc9180.constants import HPKEMode
 
 # Encode message with header
 enc, ct = hpke.seal_base(pkR, info, aad, pt)
@@ -392,8 +392,8 @@ Note: This is an application-level format following RFC 9180 §10 guidance; appl
 ### Constants
 
 ```python
-from hpke import KEMID, KDFID, AEADID
-from hpke.constants import HPKEMode
+from rfc9180 import KEMID, KDFID, AEADID
+from rfc9180.constants import HPKEMode
 
 # KEM IDs
 KEMID.DHKEM_P256_HKDF_SHA256    # 0x0010
@@ -456,7 +456,7 @@ Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation d
 The library provides comprehensive error handling:
 
 ```python
-from hpke.exceptions import (
+from rfc9180.exceptions import (
     OpenError,              # Decryption failure
     MessageLimitReachedError,  # Sequence number overflow
 )

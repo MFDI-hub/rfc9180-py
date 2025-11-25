@@ -1,10 +1,10 @@
 import secrets
 
-from hpke.constants import AEADID, KDFID
-from hpke.context import ContextRecipient, ContextSender
-from hpke.primitives.aead import AEADBase
-from hpke.primitives.kdf import KDFBase
-from hpke.utils import I2OSP, xor_bytes
+from rfc9180.constants import AEADID, KDFID
+from rfc9180.context import ContextRecipient, ContextSender
+from rfc9180.primitives.aead import AEADBase
+from rfc9180.primitives.kdf import KDFBase
+from rfc9180.utils import I2OSP, xor_bytes
 
 
 def test_context_nonce_computation():

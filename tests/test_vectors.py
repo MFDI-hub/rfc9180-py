@@ -3,11 +3,11 @@ import os
 
 import pytest
 
-from hpke.constants import AEADID, KDFID
-from hpke.primitives.aead import AEADBase
-from hpke.primitives.kdf import KDFBase
-from hpke.primitives.kem import DHKEM_P256, DHKEM_X25519
-from hpke.setup import HPKESetup
+from rfc9180.constants import AEADID, KDFID
+from rfc9180.primitives.aead import AEADBase
+from rfc9180.primitives.kdf import KDFBase
+from rfc9180.primitives.kem import DHKEM_P256, DHKEM_X25519
+from rfc9180.setup import HPKESetup
 
 
 def load_vector(path: str):

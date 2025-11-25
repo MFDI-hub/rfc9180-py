@@ -1,4 +1,4 @@
-from hpke.primitives.kem import DHKEM_P384, DHKEM_P521, DHKEM_X448
+from rfc9180.primitives.kem import DHKEM_P384, DHKEM_P521, DHKEM_X448
 
 
 def test_kem_p384_flow():

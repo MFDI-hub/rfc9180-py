@@ -1,6 +1,6 @@
 import pytest
 
-from hpke.utils import I2OSP, OS2IP, concat, xor_bytes
+from rfc9180.utils import I2OSP, OS2IP, concat, xor_bytes
 
 
 def test_I2OSP_and_OS2IP_roundtrip():

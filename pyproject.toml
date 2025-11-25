@@ -96,3 +96,9 @@ module = "tests.*"
 disallow_untyped_defs = false
 ignore_errors = true
 
+# Note: uv virtual environment naming
+# uv does not currently support configuring virtual environment name in pyproject.toml
+# To create a venv with a custom name, use: uv venv <name>
+# Default behavior: uv creates a venv named ".venv" in the project directory
+# Example: uv venv .venv-rfc9180
+

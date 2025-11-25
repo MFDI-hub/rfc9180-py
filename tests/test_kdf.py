@@ -1,5 +1,5 @@
-from hpke.constants import KDFID
-from hpke.primitives.kdf import KDFBase
+from rfc9180.constants import KDFID
+from rfc9180.primitives.kdf import KDFBase
 
 # RFC 5869 - Test Case 1 (SHA-256)
 IKM = bytes.fromhex("0b" * 22)
