@@ -2,7 +2,7 @@
 
 A Python implementation of **Hybrid Public Key Encryption (HPKE)** as specified in [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180.txt).
 
-# Overview
+## Overview
 
 HPKE provides a variant of public key encryption for arbitrary-sized plaintexts. It combines an asymmetric Key Encapsulation Mechanism (KEM), a Key Derivation Function (KDF), and an Authenticated Encryption with Associated Data (AEAD) algorithm to provide secure encryption with optional authentication.
 
@@ -16,25 +16,30 @@ This library implements the core HPKE specification using Python's `cryptography
 - **Context APIs**: Multi-message encryption contexts with automatic nonce management
 - **Secret Export**: Export application secrets from HPKE contexts
 - **RFC 9180 Compliant**: Follows the specification closely with proper domain separation and validation
+- **Key Management**: Key generation, derivation, and serialization utilities
+- **Message Encoding Helpers**: Self-describing message format with header encoding/parsing
 
 ## Installation
 
 ```bash
-pip install cryptography
+pip install rfc9180-py
 ```
 
-The library uses Python's standard `cryptography` library for all cryptographic primitives.
+The library requires Python 3.9+ and uses the `cryptography` library for all cryptographic primitives.
 
 ## Quick Start
 
 ```python
-from hpke import HPKE, KEMID, KDFID, AEADID
+from hpke import HPKE, KEMID, KDFID, AEADID, create_hpke
 
 # Create HPKE instance with default ciphersuite (X25519 + HKDF-SHA256 + AES-128-GCM)
 hpke = HPKE(KEMID.DHKEM_X25519_HKDF_SHA256, KDFID.HKDF_SHA256, AEADID.AES_128_GCM)
 
+# Or use the convenience function
+hpke = create_hpke()  # Uses defaults
+
 # Generate recipient key pair
-skR, pkR = hpke.kem.generate_key_pair()
+skR, pkR = hpke.generate_key_pair()
 
 # Single-shot encryption (Base mode)
 info = b"application-info"
@@ -55,6 +60,9 @@ ct2 = ctx_sender.seal(aad, b"message 2")
 ctx_recipient = hpke.setup.setup_base_recipient(enc, skR, info)
 pt1 = ctx_recipient.open(aad, ct1)
 pt2 = ctx_recipient.open(aad, ct2)
+
+# Export secrets
+secret = ctx_sender.export(b"exporter-context", 32)
 ```
 
 ## Implementation Status
@@ -174,7 +182,26 @@ Note: These are intentional non-goals per RFC 9180 and should be handled at the 
 
 ## API Documentation
 
+### Package Structure
+
+The package is installed as `rfc9180-py` but imported as `hpke`:
+
+```python
+from hpke import HPKE, KEMID, KDFID, AEADID, create_hpke, append_header, parse_header
+from hpke.constants import HPKEMode
+from hpke.setup import HPKESetup
+from hpke.single_shot import HPKESingleShot
+from hpke.context import Context, ContextSender, ContextRecipient
+from hpke.primitives.kem import DHKEM_X25519, DHKEM_X448, DHKEM_P256, DHKEM_P384, DHKEM_P521
+from hpke.primitives.kdf import KDFBase
+from hpke.primitives.aead import AEADBase
+```
+
 ### High-Level API
+
+#### HPKE Class
+
+The main `HPKE` class provides a convenient interface for all HPKE operations:
 
 ```python
 from hpke import HPKE, KEMID, KDFID, AEADID
@@ -183,13 +210,55 @@ from hpke import HPKE, KEMID, KDFID, AEADID
 hpke = HPKE(kem_id, kdf_id, aead_id)
 
 # Access primitives
-hpke.kem    # KEM instance
-hpke.kdf    # KDF instance
-hpke.aead   # AEAD instance
-hpke.setup  # Setup functions
+hpke.kem_id    # KEM identifier
+hpke.kdf_id    # KDF identifier
+hpke.aead_id   # AEAD identifier
+hpke.kem       # KEM instance
+hpke.kdf       # KDF instance
+hpke.aead      # AEAD instance
+hpke.setup     # Setup functions (HPKESetup instance)
+```
+
+#### Convenience Function
+
+```python
+from hpke import create_hpke
+
+# Create with defaults (X25519 + HKDF-SHA256 + AES-128-GCM)
+hpke = create_hpke()
+
+# Or specify algorithms
+hpke = create_hpke(
+    kem_id=KEMID.DHKEM_X25519_HKDF_SHA256,
+    kdf_id=KDFID.HKDF_SHA256,
+    aead_id=AEADID.AES_128_GCM
+)
+```
+
+### Key Management Methods
+
+The `HPKE` class provides key management utilities:
+
+```python
+# Generate a new key pair
+skR, pkR = hpke.generate_key_pair()
+
+# Derive a key pair from a seed
+seed = b"your-seed-material"  # Must be appropriate length for the KEM
+skR, pkR = hpke.derive_key_pair(seed)
+
+# Serialize keys
+pk_bytes = hpke.serialize_public_key(pkR)
+sk_bytes = hpke.serialize_private_key(skR)
+
+# Keys can be passed as bytes or Key Objects - automatic deserialization
+enc, ct = hpke.seal_base(pk_bytes, info, aad, pt)  # Works with bytes
+enc, ct = hpke.seal_base(pkR, info, aad, pt)       # Works with Key Objects
 ```
 
 ### Single-Shot APIs
+
+Single-shot APIs combine setup and encryption/decryption in one call:
 
 ```python
 # Base mode
@@ -197,10 +266,13 @@ enc, ct = hpke.seal_base(pkR, info, aad, pt)
 pt = hpke.open_base(enc, skR, info, aad, ct)
 
 # PSK mode
+psk = b"pre-shared-key"  # Must have at least 32 bytes of entropy
+psk_id = b"psk-identifier"
 enc, ct = hpke.seal_psk(pkR, info, aad, pt, psk, psk_id)
 pt = hpke.open_psk(enc, skR, info, aad, ct, psk, psk_id)
 
 # Auth mode
+skS, pkS = hpke.generate_key_pair()  # Sender key pair
 enc, ct = hpke.seal_auth(pkR, info, aad, pt, skS)
 pt = hpke.open_auth(enc, skR, info, aad, ct, pkS)
 
@@ -210,6 +282,8 @@ pt = hpke.open_auth_psk(enc, skR, info, aad, ct, psk, psk_id, pkS)
 ```
 
 ### Context APIs
+
+Context APIs allow encrypting/decrypting multiple messages with the same context:
 
 ```python
 # Setup contexts
@@ -226,20 +300,66 @@ pt2 = ctx_r.open(aad, ct2)
 secret = ctx_s.export(exporter_context, length)
 ```
 
-## Testing
+#### Available Setup Methods
 
-The library includes comprehensive unit tests and support for RFC 9180 test vectors:
+```python
+# Base mode
+enc, ctx_s = hpke.setup.setup_base_sender(pkR, info)
+ctx_r = hpke.setup.setup_base_recipient(enc, skR, info)
 
-```bash
-# Run all tests
-pytest tests/
+# PSK mode
+enc, ctx_s = hpke.setup.setup_psk_sender(pkR, info, psk, psk_id)
+ctx_r = hpke.setup.setup_psk_recipient(enc, skR, info, psk, psk_id)
 
-# Run specific test suites
-pytest tests/test_kem.py
-pytest tests/test_vectors.py
+# Auth mode
+enc, ctx_s = hpke.setup.setup_auth_sender(pkR, info, skS)
+ctx_r = hpke.setup.setup_auth_recipient(enc, skR, info, pkS)
+
+# AuthPSK mode
+enc, ctx_s = hpke.setup.setup_auth_psk_sender(pkR, info, psk, psk_id, skS)
+ctx_r = hpke.setup.setup_auth_psk_recipient(enc, skR, info, psk, psk_id, pkS)
 ```
 
-## Section 10: Message Encoding Helpers
+#### Context Methods
+
+```python
+# Seal (encrypt) - only available on sender contexts
+ciphertext = ctx_sender.seal(aad, plaintext)
+
+# Open (decrypt) - only available on recipient contexts
+plaintext = ctx_recipient.open(aad, ciphertext)
+
+# Export secret - available on all contexts
+secret = ctx.export(exporter_context, length)
+```
+
+### Single-Shot Export APIs
+
+For export-only operations without encryption:
+
+```python
+from hpke.single_shot import HPKESingleShot
+
+single = HPKESingleShot(hpke.setup)
+
+# Base mode export
+enc, secret = single.send_export_base(pkR, info, exporter_context, length)
+secret = single.receive_export_base(enc, skR, info, exporter_context, length)
+
+# PSK mode export
+enc, secret = single.send_export_psk(pkR, info, exporter_context, length, psk, psk_id)
+secret = single.receive_export_psk(enc, skR, info, exporter_context, length, psk, psk_id)
+
+# Auth mode export
+enc, secret = single.send_export_auth(pkR, info, exporter_context, length, skS)
+secret = single.receive_export_auth(enc, skR, info, exporter_context, length, pkS)
+
+# AuthPSK mode export
+enc, secret = single.send_export_auth_psk(pkR, info, exporter_context, length, psk, psk_id, skS)
+secret = single.receive_export_auth_psk(enc, skR, info, exporter_context, length, psk, psk_id, pkS)
+```
+
+### Message Encoding Helpers
 
 Applications often need a wire format. This library provides simple helpers for a self-describing header:
 
@@ -247,17 +367,80 @@ Applications often need a wire format. This library provides simple helpers for 
 from hpke import append_header, parse_header
 from hpke.constants import HPKEMode
 
+# Encode message with header
 enc, ct = hpke.seal_base(pkR, info, aad, pt)
-msg = append_header(enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), int(HPKEMode.MODE_BASE))
-kem_id2, kdf_id2, aead_id2, mode2, enc2, ct2 = parse_header(msg, enc_len=hpke.kem.Nenc)
+msg = append_header(
+    enc, ct,
+    int(hpke.kem_id),
+    int(hpke.kdf_id),
+    int(hpke.aead_id),
+    int(HPKEMode.MODE_BASE)
+)
+
+# Parse message header
+kem_id2, kdf_id2, aead_id2, mode2, enc2, ct2 = parse_header(
+    msg,
+    enc_len=hpke.kem.Nenc
+)
 pt2 = hpke.open_base(enc2, skR, info, aad, ct2)
 ```
 
+The header format is: `"HPKE" | kem_id(2) | kdf_id(2) | aead_id(2) | mode(1) | enc | ct`
+
 Note: This is an application-level format following RFC 9180 §10 guidance; applications may define alternative encodings.
+
+### Constants
+
+```python
+from hpke import KEMID, KDFID, AEADID
+from hpke.constants import HPKEMode
+
+# KEM IDs
+KEMID.DHKEM_P256_HKDF_SHA256    # 0x0010
+KEMID.DHKEM_P384_HKDF_SHA384    # 0x0011
+KEMID.DHKEM_P521_HKDF_SHA512    # 0x0012
+KEMID.DHKEM_X25519_HKDF_SHA256  # 0x0020
+KEMID.DHKEM_X448_HKDF_SHA512    # 0x0021
+
+# KDF IDs
+KDFID.HKDF_SHA256  # 0x0001
+KDFID.HKDF_SHA384  # 0x0002
+KDFID.HKDF_SHA512  # 0x0003
+
+# AEAD IDs
+AEADID.AES_128_GCM        # 0x0001
+AEADID.AES_256_GCM        # 0x0002
+AEADID.CHACHA20_POLY1305  # 0x0003
+AEADID.EXPORT_ONLY        # 0xFFFF
+
+# HPKE Modes
+HPKEMode.MODE_BASE     # 0x00
+HPKEMode.MODE_PSK      # 0x01
+HPKEMode.MODE_AUTH     # 0x02
+HPKEMode.MODE_AUTH_PSK # 0x03
+```
+
+## Testing
+
+The library includes comprehensive unit tests and support for RFC 9180 test vectors:
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest tests/
+
+# Run specific test suites
+pytest tests/test_kem_x25519.py
+pytest tests/test_kem_p256.py
+pytest tests/test_rfc9180_vectors.py
+pytest tests/test_integration.py
+```
 
 ## KEM/KDF Decoupling
 
-Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation decouples the KEM’s internal KDF from the ciphersuite KDF used in the key schedule (§5.1): KEMs self-select their mandated hash; the suite KDF (e.g., HKDF-SHA256) is used for key schedule and exports.
+Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation decouples the KEM's internal KDF from the ciphersuite KDF used in the key schedule (§5.1): KEMs self-select their mandated hash; the suite KDF (e.g., HKDF-SHA256) is used for key schedule and exports.
 
 ## Security Considerations
 
@@ -265,6 +448,25 @@ Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation d
 - **Key Reuse**: Ephemeral keys are generated fresh for each encryption
 - **Nonce Management**: Sequence numbers are automatically managed with overflow protection
 - **Validation**: All inputs are validated per RFC 9180 requirements
+- **Key Serialization**: Keys can be serialized/deserialized for storage and transmission
+- **Context Limits**: Sequence numbers are bounded to prevent nonce reuse
+
+## Error Handling
+
+The library provides comprehensive error handling:
+
+```python
+from hpke.exceptions import (
+    OpenError,              # Decryption failure
+    MessageLimitReachedError,  # Sequence number overflow
+)
+
+try:
+    pt = hpke.open_base(enc, skR, info, aad, ct)
+except OpenError:
+    # Decryption failed (wrong key, corrupted data, etc.)
+    pass
+```
 
 ## References
 
@@ -274,7 +476,7 @@ Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation d
 
 ## License
 
-This implementation follows the same licensing terms as RFC 9180 (IETF Trust).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
@@ -282,3 +484,4 @@ Contributions are welcome! Areas for improvement:
 - Performance optimizations
 - Additional test vectors
 - Documentation improvements
+- Additional KEM/KDF/AEAD algorithm support
