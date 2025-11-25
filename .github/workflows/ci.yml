@@ -13,7 +13,6 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                # Test all Python versions on Linux, latest on other OS
                 include:
                     - os: ubuntu-latest
                       python-version: "3.9"
@@ -36,17 +35,17 @@ jobs:
               uses: astral-sh/setup-uv@v4
               with:
                   version: "latest"
+                  enable-cache: true # Recommended: Caches the environment for speed
 
             - name: Set up Python ${{ matrix.python-version }}
               run: uv python install ${{ matrix.python-version }}
 
             - name: Install dependencies
-              run: |
-                  uv sync --dev
+              run: uv sync --dev
 
             - name: Run tests
-              run: |
-                  uv run python -m pytest tests/ -v
+              # Checks the 'tests' folder
+              run: uv run python -m pytest tests/ -v
 
     lint:
         name: Lint and type check
@@ -59,18 +58,19 @@ jobs:
               uses: astral-sh/setup-uv@v4
               with:
                   version: "latest"
+                  enable-cache: true
 
             - name: Set up Python
               run: uv python install 3.12
 
             - name: Install dependencies
-              run: |
-                  uv sync --dev
+              run: uv sync --dev
 
             - name: Run ruff
-              run: |
-                  uvx ruff check .
+              # Use 'uv run' to use the specific version defined in your project
+              run: uv run ruff check .
 
             - name: Run mypy
-              run: |
-                  uvx mypy src/rfc9180-py --ignore-missing-imports || true
+              # CRITICAL CHANGE: Use 'uv run' and target the correct folder
+              # Make sure you renamed 'src/rfc9180-py' to 'src/rfc9180' as discussed!
+              run: uv run mypy src/rfc9180
