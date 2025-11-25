@@ -531,7 +531,7 @@ class DHKEM_X448(KEMBase):
 
     def __init__(self):
         super().__init__(KEMID.DHKEM_X448_HKDF_SHA512)
-        self._raw_private_bytes = {}
+        self._raw_private_bytes: dict[int, bytes] = {}
 
     def generate_key_pair(self):
         sk = x448.X448PrivateKey.generate()
