@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from typing import cast
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, x448, x25519
 
@@ -475,10 +475,10 @@ class DHKEM_X25519(KEMBase):
         return sk, pk
 
     def serialize_public_key(self, pk) -> bytes:
-        return pk.public_bytes(  # type: ignore[no-any-return]
+        return cast(bytes, pk.public_bytes(
             encoding=serialization.Encoding.Raw,
             format=serialization.PublicFormat.Raw,
-        )
+        ))
 
     def deserialize_public_key(self, pkm: bytes):
         if len(pkm) != self.Npk:
@@ -563,10 +563,10 @@ class DHKEM_X448(KEMBase):
         return sk, pk
 
     def serialize_public_key(self, pk) -> bytes:
-        return pk.public_bytes(  # type: ignore[no-any-return]
+        return cast(bytes, pk.public_bytes(
             encoding=serialization.Encoding.Raw,
             format=serialization.PublicFormat.Raw,
-        )
+        ))
 
     def deserialize_public_key(self, pkm: bytes):
         if len(pkm) != self.Npk:
@@ -624,10 +624,11 @@ class DHKEM_NIST(KEMBase):
         Curve order for rejection sampling.
     """
 
-    def __init__(self, kem_id: KEMID, curve, order: int):
+    def __init__(self, kem_id: KEMID, curve, order: int, mask: int = 0xFF):
         super().__init__(kem_id)
         self.curve = curve
         self.order = order
+        self.mask = mask
 
     def generate_key_pair(self):
         sk = ec.generate_private_key(self.curve)
@@ -655,6 +656,11 @@ class DHKEM_NIST(KEMBase):
                 L=self.Nsk,
                 suite_id=self.suite_id,
             )
+            if self.mask != 0xFF:
+                # Convert to bytearray to modify, then back to bytes
+                b = bytearray(candidate)
+                b[0] &= self.mask
+                candidate = bytes(b)
             scalar = OS2IP(candidate)
             if 1 <= scalar < self.order:
                 break
@@ -744,4 +750,5 @@ class DHKEM_P521(DHKEM_NIST):
             KEMID.DHKEM_P521_HKDF_SHA512,
             ec.SECP521R1(),
             0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409,
+            0x01, # mask
         )

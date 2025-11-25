@@ -9,7 +9,7 @@ from .primitives.kdf import KDFBase
 from .primitives.kem import DHKEM_P256, DHKEM_P384, DHKEM_P521, DHKEM_X448, DHKEM_X25519
 from .setup import HPKESetup
 from .single_shot import HPKESingleShot
-
+from typing import cast
 
 class HPKE:
     """
@@ -211,7 +211,7 @@ class HPKE:
         """
         if isinstance(pk, bytes):
             return pk
-        return self.kem.serialize_public_key(pk)
+        return cast(bytes, self.kem.serialize_public_key(pk))
 
     def serialize_private_key(self, sk) -> bytes:
         """
@@ -229,7 +229,7 @@ class HPKE:
         """
         if isinstance(sk, bytes):
             return sk
-        return self.kem.serialize_private_key(sk)
+        return cast(bytes, self.kem.serialize_private_key(sk))
 
     # Single-shot convenience
     def seal_base(self, pkR, info: bytes, aad: bytes, pt: bytes):
