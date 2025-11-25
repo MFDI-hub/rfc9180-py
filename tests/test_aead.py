@@ -1,6 +1,8 @@
 
-import pytest
 import secrets
+
+import pytest
+
 from rfc9180.constants import AEADID
 from rfc9180.primitives.aead import AEADBase
 

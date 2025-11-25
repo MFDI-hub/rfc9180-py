@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import cast
+
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, x448, x25519
 
@@ -415,7 +416,7 @@ class DHKEM_X25519(KEMBase):
         super().__init__(KEMID.DHKEM_X25519_HKDF_SHA256)
         # Keep track of raw (unclamped) private bytes for derived keys so that
         # SerializePrivateKey matches RFC vectors.
-        self._raw_private_bytes = {}
+        self._raw_private_bytes: dict[int, bytes] = {}
 
     def generate_key_pair(self):
         """

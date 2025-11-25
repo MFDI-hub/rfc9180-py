@@ -2,6 +2,8 @@
 hpke package: Hybrid Public Key Encryption (RFC 9180) primitives and APIs.
 """
 
+from typing import cast
+
 from .constants import AEADID, KDFID, KEMID
 from .helpers import append_header, parse_header
 from .primitives.aead import AEADBase
@@ -9,7 +11,7 @@ from .primitives.kdf import KDFBase
 from .primitives.kem import DHKEM_P256, DHKEM_P384, DHKEM_P521, DHKEM_X448, DHKEM_X25519
 from .setup import HPKESetup
 from .single_shot import HPKESingleShot
-from typing import cast
+
 
 class HPKE:
     """
