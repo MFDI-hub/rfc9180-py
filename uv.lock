@@ -542,7 +542,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pyhpke"
+name = "rfc9180-py"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

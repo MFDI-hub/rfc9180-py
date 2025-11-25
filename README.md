@@ -1,4 +1,4 @@
-# PyHPKE
+# rfc9180-py
 
 A Python implementation of **Hybrid Public Key Encryption (HPKE)** as specified in [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180.txt).
 

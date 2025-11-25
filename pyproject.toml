@@ -1,12 +1,12 @@
 [project]
-name = "pyhpke"
+name = "rfc9180-py"
 version = "0.1.0"
 description = "A Python implementation of Hybrid Public Key Encryption (HPKE) as specified in RFC 9180"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "IETF Trust" }
+license = { file = "LICENSE" }
 authors = [
-    { name = "PyHPKE Contributors" }
+    { name = "rfc9180-py Contributors" }
 ]
 keywords = ["hpke", "encryption", "rfc9180", "hybrid", "public-key", "cryptography"]
 classifiers = [
@@ -14,7 +14,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Security :: Cryptography",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -34,10 +33,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/DELL/PyHPKE"
-Documentation = "https://github.com/DELL/PyHPKE#readme"
-Repository = "https://github.com/DELL/PyHPKE"
-Issues = "https://github.com/DELL/PyHPKE/issues"
+Homepage = "https://github.com/DELL/rfc9180-py"
+Documentation = "https://github.com/DELL/rfc9180-py#readme"
+Repository = "https://github.com/DELL/rfc9180-py"
+Issues = "https://github.com/DELL/rfc9180-py/issues"
 
 [build-system]
 requires = ["hatchling"]
