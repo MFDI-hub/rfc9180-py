@@ -18,6 +18,33 @@ from .kdf import KDFBase
 class KEMBase(ABC):
     """
     Base class for DHKEM implementations.
+
+    Provides Diffie-Hellman-based Key Encapsulation Mechanism operations
+    as specified in RFC 9180 §7.1.
+
+    Parameters
+    ----------
+    kem_id : KEMID
+        KEM algorithm identifier.
+
+    Attributes
+    ----------
+    kem_id : KEMID
+        KEM algorithm identifier.
+    kdf : KDFBase
+        Internal KDF instance for the KEM.
+    Nsecret : int
+        Shared secret length in bytes.
+    Nenc : int
+        Encapsulated key length in bytes.
+    Npk : int
+        Public key length in bytes.
+    Nsk : int
+        Private key length in bytes.
+    Ndh : int
+        DH shared secret length in bytes.
+    suite_id : bytes
+        KEM suite identifier.
     """
 
     def __init__(self, kem_id: KEMID):
@@ -33,6 +60,24 @@ class KEMBase(ABC):
         self.suite_id = concat(b"KEM", I2OSP(kem_id, 2))
 
     def _create_internal_kdf(self, kem_id: KEMID) -> KDFBase:
+        """
+        Create internal KDF instance for the KEM.
+
+        Parameters
+        ----------
+        kem_id : KEMID
+            KEM algorithm identifier.
+
+        Returns
+        -------
+        KDFBase
+            KDF instance.
+
+        Raises
+        ------
+        ValueError
+            If KEM ID is unknown.
+        """
         mapping = {
             KEMID.DHKEM_P256_HKDF_SHA256: KDFID.HKDF_SHA256,
             KEMID.DHKEM_P384_HKDF_SHA384: KDFID.HKDF_SHA384,
@@ -46,39 +91,174 @@ class KEMBase(ABC):
 
     @abstractmethod
     def generate_key_pair(self):
+        """
+        Generate a new key pair.
+
+        Returns
+        -------
+        tuple
+            Tuple of (private_key, public_key) as Key Objects.
+        """
         pass
 
     @abstractmethod
     def derive_key_pair(self, ikm: bytes):
+        """
+        Derive a key pair from input key material.
+
+        Parameters
+        ----------
+        ikm : bytes
+            Input key material.
+
+        Returns
+        -------
+        tuple
+            Tuple of (private_key, public_key) as Key Objects.
+
+        Raises
+        ------
+        ValueError
+            If IKM is too short.
+        DeriveKeyPairError
+            If derivation fails (e.g., rejection sampling exceeded).
+        """
         pass
 
     @abstractmethod
     def serialize_public_key(self, pk) -> bytes:
+        """
+        Serialize a public key to bytes.
+
+        Parameters
+        ----------
+        pk : Key Object
+            Public key.
+
+        Returns
+        -------
+        bytes
+            Serialized public key.
+        """
         pass
 
     @abstractmethod
     def deserialize_public_key(self, pkm: bytes):
+        """
+        Deserialize a public key from bytes.
+
+        Parameters
+        ----------
+        pkm : bytes
+            Serialized public key.
+
+        Returns
+        -------
+        Key Object
+            Public key.
+
+        Raises
+        ------
+        DeserializeError
+            If deserialization fails.
+        """
         pass
 
     @abstractmethod
     def serialize_private_key(self, sk) -> bytes:
+        """
+        Serialize a private key to bytes.
+
+        Parameters
+        ----------
+        sk : Key Object
+            Private key.
+
+        Returns
+        -------
+        bytes
+            Serialized private key.
+        """
         pass
 
     @abstractmethod
     def deserialize_private_key(self, skm: bytes):
+        """
+        Deserialize a private key from bytes.
+
+        Parameters
+        ----------
+        skm : bytes
+            Serialized private key.
+
+        Returns
+        -------
+        Key Object
+            Private key.
+
+        Raises
+        ------
+        DeserializeError
+            If deserialization fails.
+        """
         pass
 
     @abstractmethod
     def dh(self, sk, pk) -> bytes:
+        """
+        Perform Diffie-Hellman key exchange.
+
+        Parameters
+        ----------
+        sk : Key Object
+            Private key.
+        pk : Key Object
+            Public key.
+
+        Returns
+        -------
+        bytes
+            Shared secret.
+
+        Raises
+        ------
+        ValidationError
+            If DH operation fails or output is invalid.
+        """
         pass
 
     @abstractmethod
     def _get_public_key(self, sk):
+        """
+        Get public key from private key.
+
+        Parameters
+        ----------
+        sk : Key Object
+            Private key.
+
+        Returns
+        -------
+        Key Object
+            Public key.
+        """
         pass
 
     def extract_and_expand(self, dh_value: bytes, kem_context: bytes) -> bytes:
         """
-        RFC 9180 §4.1 - ExtractAndExpand
+        RFC 9180 §4.1 - ExtractAndExpand.
+
+        Parameters
+        ----------
+        dh_value : bytes
+            Diffie-Hellman shared secret.
+        kem_context : bytes
+            KEM context.
+
+        Returns
+        -------
+        bytes
+            Shared secret (Nsecret bytes).
         """
         eae_prk = self.kdf.labeled_extract(
             salt=b"",
@@ -98,6 +278,21 @@ class KEMBase(ABC):
     def encap(self, pkR):
         """
         Base/PSK encapsulation.
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+
+        Returns
+        -------
+        tuple
+            Tuple of (shared_secret, encapsulated_key).
+
+        Raises
+        ------
+        EncapError
+            If encapsulation fails.
         """
         try:
             skE, pkE = self.generate_key_pair()
@@ -112,6 +307,23 @@ class KEMBase(ABC):
     def decap(self, enc: bytes, skR):
         """
         Base/PSK decapsulation.
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+
+        Returns
+        -------
+        bytes
+            Shared secret.
+
+        Raises
+        ------
+        DecapError
+            If decapsulation fails.
         """
         try:
             pkE = self.deserialize_public_key(enc)
@@ -126,6 +338,23 @@ class KEMBase(ABC):
     def auth_encap(self, pkR, skS):
         """
         Authenticated encapsulation (Auth/AuthPSK).
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+        skS : Key Object
+            Sender's private key.
+
+        Returns
+        -------
+        tuple
+            Tuple of (shared_secret, encapsulated_key).
+
+        Raises
+        ------
+        EncapError
+            If encapsulation fails.
         """
         try:
             skE, pkE = self.generate_key_pair()
@@ -142,6 +371,25 @@ class KEMBase(ABC):
     def auth_decap(self, enc: bytes, skR, pkS):
         """
         Authenticated decapsulation (Auth/AuthPSK).
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+        pkS : Key Object
+            Sender's public key.
+
+        Returns
+        -------
+        bytes
+            Shared secret.
+
+        Raises
+        ------
+        DecapError
+            If decapsulation fails.
         """
         try:
             pkE = self.deserialize_public_key(enc)
@@ -158,6 +406,9 @@ class KEMBase(ABC):
 class DHKEM_X25519(KEMBase):
     """
     DHKEM with X25519 and HKDF-SHA256.
+
+    Implements DHKEM using the X25519 elliptic curve Diffie-Hellman
+    function and HKDF-SHA256 for key derivation.
     """
 
     def __init__(self):
@@ -167,13 +418,36 @@ class DHKEM_X25519(KEMBase):
         self._raw_private_bytes = {}
 
     def generate_key_pair(self):
+        """
+        Generate a new X25519 key pair.
+
+        Returns
+        -------
+        tuple
+            Tuple of (X25519PrivateKey, X25519PublicKey).
+        """
         sk = x25519.X25519PrivateKey.generate()
         pk = sk.public_key()
         return sk, pk
 
     def derive_key_pair(self, ikm: bytes):
         """
-        RFC 9180 §7.1.3 - DeriveKeyPair for X25519
+        RFC 9180 §7.1.3 - DeriveKeyPair for X25519.
+
+        Parameters
+        ----------
+        ikm : bytes
+            Input key material (must be at least Nsk bytes).
+
+        Returns
+        -------
+        tuple
+            Tuple of (X25519PrivateKey, X25519PublicKey).
+
+        Raises
+        ------
+        ValueError
+            If IKM is too short.
         """
         if len(ikm) < self.Nsk:
             raise ValueError(f"IKM must be at least {self.Nsk} bytes")
@@ -249,6 +523,9 @@ class DHKEM_X25519(KEMBase):
 class DHKEM_X448(KEMBase):
     """
     DHKEM with X448 and HKDF-SHA512.
+
+    Implements DHKEM using the X448 elliptic curve Diffie-Hellman
+    function and HKDF-SHA512 for key derivation.
     """
 
     def __init__(self):
@@ -333,6 +610,18 @@ class DHKEM_X448(KEMBase):
 class DHKEM_NIST(KEMBase):
     """
     Base for NIST P-curves (P-256, P-384, P-521).
+
+    Implements DHKEM using NIST elliptic curves with ECDH and
+    rejection sampling for key derivation.
+
+    Parameters
+    ----------
+    kem_id : KEMID
+        KEM algorithm identifier.
+    curve
+        Elliptic curve instance.
+    order : int
+        Curve order for rejection sampling.
     """
 
     def __init__(self, kem_id: KEMID, curve, order: int):
@@ -414,6 +703,12 @@ class DHKEM_NIST(KEMBase):
 
 
 class DHKEM_P256(DHKEM_NIST):
+    """
+    DHKEM with P-256 and HKDF-SHA256.
+
+    Implements DHKEM using the NIST P-256 curve (secp256r1) and
+    HKDF-SHA256 for key derivation.
+    """
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P256_HKDF_SHA256,
@@ -423,6 +718,12 @@ class DHKEM_P256(DHKEM_NIST):
 
 
 class DHKEM_P384(DHKEM_NIST):
+    """
+    DHKEM with P-384 and HKDF-SHA384.
+
+    Implements DHKEM using the NIST P-384 curve (secp384r1) and
+    HKDF-SHA384 for key derivation.
+    """
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P384_HKDF_SHA384,
@@ -432,6 +733,12 @@ class DHKEM_P384(DHKEM_NIST):
 
 
 class DHKEM_P521(DHKEM_NIST):
+    """
+    DHKEM with P-521 and HKDF-SHA512.
+
+    Implements DHKEM using the NIST P-521 curve (secp521r1) and
+    HKDF-SHA512 for key derivation.
+    """
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P521_HKDF_SHA512,

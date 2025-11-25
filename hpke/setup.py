@@ -11,6 +11,29 @@ from .utils import I2OSP, concat
 class HPKESetup:
     """
     HPKE Setup functions (RFC 9180 §5.1).
+
+    Handles the setup phase of HPKE operations, creating encryption contexts
+    for different HPKE modes.
+
+    Parameters
+    ----------
+    kem : KEMBase
+        Key Encapsulation Mechanism instance.
+    kdf : KDFBase
+        Key Derivation Function instance.
+    aead : AEADBase
+        Authenticated Encryption with Associated Data instance.
+
+    Attributes
+    ----------
+    kem : KEMBase
+        Key Encapsulation Mechanism instance.
+    kdf : KDFBase
+        Key Derivation Function instance.
+    aead : AEADBase
+        Authenticated Encryption with Associated Data instance.
+    suite_id : bytes
+        HPKE suite identifier.
     """
 
     def __init__(self, kem: KEMBase, kdf: KDFBase, aead: AEADBase):
@@ -25,6 +48,23 @@ class HPKESetup:
         )
 
     def verify_psk_inputs(self, mode: HPKEMode, psk: bytes, psk_id: bytes):
+        """
+        Verify PSK inputs are consistent with the mode.
+
+        Parameters
+        ----------
+        mode : HPKEMode
+            HPKE mode.
+        psk : bytes
+            Pre-shared key.
+        psk_id : bytes
+            Pre-shared key identifier.
+
+        Raises
+        ------
+        ValueError
+            If PSK inputs are inconsistent with the mode.
+        """
         got_psk = len(psk) > 0
         got_psk_id = len(psk_id) > 0
         if got_psk != got_psk_id:
@@ -35,6 +75,34 @@ class HPKESetup:
             raise ValueError("Missing required PSK input")
 
     def key_schedule(self, role: str, mode: HPKEMode, shared_secret: bytes, info: bytes, psk: bytes, psk_id: bytes) -> Union[ContextSender, ContextRecipient]:
+        """
+        Perform key schedule to derive encryption context.
+
+        Parameters
+        ----------
+        role : str
+            Context role ('S' for sender, 'R' for recipient).
+        mode : HPKEMode
+            HPKE mode.
+        shared_secret : bytes
+            Shared secret from KEM.
+        info : bytes
+            Application-supplied information.
+        psk : bytes
+            Pre-shared key.
+        psk_id : bytes
+            Pre-shared key identifier.
+
+        Returns
+        -------
+        ContextSender or ContextRecipient
+            Encryption context for the specified role.
+
+        Raises
+        ------
+        ValueError
+            If PSK inputs are inconsistent with the mode.
+        """
         self.verify_psk_inputs(mode, psk, psk_id)
         psk_id_hash = self.kdf.labeled_extract(
             salt=b"",
@@ -96,15 +164,71 @@ class HPKESetup:
         return ContextRecipient(**ctx_args)
 
     def setup_base_sender(self, pkR, info: bytes) -> Tuple[bytes, ContextSender]:
+        """
+        Setup Base mode for sender.
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+        info : bytes
+            Application-supplied information.
+
+        Returns
+        -------
+        tuple
+            Tuple of (encapsulated key, sender context).
+        """
         shared_secret, enc = self.kem.encap(pkR)
         ctx = self.key_schedule('S', HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")
         return enc, ctx  # type: ignore[return-value]
 
     def setup_base_recipient(self, enc: bytes, skR, info: bytes) -> ContextRecipient:
+        """
+        Setup Base mode for recipient.
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+        info : bytes
+            Application-supplied information.
+
+        Returns
+        -------
+        ContextRecipient
+            Recipient context.
+        """
         shared_secret = self.kem.decap(enc, skR)
         return self.key_schedule('R', HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
 
     def setup_psk_sender(self, pkR, info: bytes, psk: bytes, psk_id: bytes) -> Tuple[bytes, ContextSender]:
+        """
+        Setup PSK mode for sender.
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+        info : bytes
+            Application-supplied information.
+        psk : bytes
+            Pre-shared key (must have at least 32 bytes of entropy).
+        psk_id : bytes
+            Pre-shared key identifier.
+
+        Returns
+        -------
+        tuple
+            Tuple of (encapsulated key, sender context).
+
+        Raises
+        ------
+        ValueError
+            If PSK has insufficient entropy.
+        """
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.encap(pkR)
@@ -112,21 +236,109 @@ class HPKESetup:
         return enc, ctx  # type: ignore[return-value]
 
     def setup_psk_recipient(self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes) -> ContextRecipient:
+        """
+        Setup PSK mode for recipient.
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+        info : bytes
+            Application-supplied information.
+        psk : bytes
+            Pre-shared key (must have at least 32 bytes of entropy).
+        psk_id : bytes
+            Pre-shared key identifier.
+
+        Returns
+        -------
+        ContextRecipient
+            Recipient context.
+
+        Raises
+        ------
+        ValueError
+            If PSK has insufficient entropy.
+        """
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.decap(enc, skR)
         return self.key_schedule('R', HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id)  # type: ignore[return-value]
 
     def setup_auth_sender(self, pkR, info: bytes, skS) -> Tuple[bytes, ContextSender]:
+        """
+        Setup Auth mode for sender.
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+        info : bytes
+            Application-supplied information.
+        skS : Key Object
+            Sender's private key.
+
+        Returns
+        -------
+        tuple
+            Tuple of (encapsulated key, sender context).
+        """
         shared_secret, enc = self.kem.auth_encap(pkR, skS)
         ctx = self.key_schedule('S', HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")
         return enc, ctx  # type: ignore[return-value]
 
     def setup_auth_recipient(self, enc: bytes, skR, info: bytes, pkS) -> ContextRecipient:
+        """
+        Setup Auth mode for recipient.
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+        info : bytes
+            Application-supplied information.
+        pkS : Key Object
+            Sender's public key.
+
+        Returns
+        -------
+        ContextRecipient
+            Recipient context.
+        """
         shared_secret = self.kem.auth_decap(enc, skR, pkS)
         return self.key_schedule('R', HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
 
     def setup_auth_psk_sender(self, pkR, info: bytes, psk: bytes, psk_id: bytes, skS) -> Tuple[bytes, ContextSender]:
+        """
+        Setup AuthPSK mode for sender.
+
+        Parameters
+        ----------
+        pkR : Key Object
+            Recipient's public key.
+        info : bytes
+            Application-supplied information.
+        psk : bytes
+            Pre-shared key (must have at least 32 bytes of entropy).
+        psk_id : bytes
+            Pre-shared key identifier.
+        skS : Key Object
+            Sender's private key.
+
+        Returns
+        -------
+        tuple
+            Tuple of (encapsulated key, sender context).
+
+        Raises
+        ------
+        ValueError
+            If PSK has insufficient entropy.
+        """
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.auth_encap(pkR, skS)
@@ -134,6 +346,34 @@ class HPKESetup:
         return enc, ctx  # type: ignore[return-value]
 
     def setup_auth_psk_recipient(self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes, pkS) -> ContextRecipient:
+        """
+        Setup AuthPSK mode for recipient.
+
+        Parameters
+        ----------
+        enc : bytes
+            Encapsulated public key.
+        skR : Key Object
+            Recipient's private key.
+        info : bytes
+            Application-supplied information.
+        psk : bytes
+            Pre-shared key (must have at least 32 bytes of entropy).
+        psk_id : bytes
+            Pre-shared key identifier.
+        pkS : Key Object
+            Sender's public key.
+
+        Returns
+        -------
+        ContextRecipient
+            Recipient context.
+
+        Raises
+        ------
+        ValueError
+            If PSK has insufficient entropy.
+        """
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.auth_decap(enc, skR, pkS)

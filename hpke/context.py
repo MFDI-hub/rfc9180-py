@@ -10,7 +10,46 @@ Role = Literal['S', 'R']
 
 class Context:
     """
-    HPKE Encryption Context (RFC 9180 §5.2)
+    HPKE Encryption Context (RFC 9180 §5.2).
+
+    Manages the encryption/decryption state for HPKE operations, including
+    sequence number tracking and key export functionality.
+
+    Parameters
+    ----------
+    role : Role
+        Context role ('S' for sender, 'R' for recipient).
+    aead : AEADBase
+        AEAD algorithm instance.
+    kdf : KDFBase
+        KDF algorithm instance.
+    key : bytes
+        AEAD encryption key.
+    base_nonce : bytes
+        Base nonce for nonce generation.
+    exporter_secret : bytes
+        Secret for key export operations.
+    suite_id : bytes
+        HPKE suite identifier.
+
+    Attributes
+    ----------
+    role : Role
+        Context role.
+    aead : AEADBase
+        AEAD algorithm instance.
+    kdf : KDFBase
+        KDF algorithm instance.
+    key : bytes
+        AEAD encryption key.
+    base_nonce : bytes
+        Base nonce for nonce generation.
+    exporter_secret : bytes
+        Secret for key export operations.
+    suite_id : bytes
+        HPKE suite identifier.
+    seq : int
+        Current sequence number.
     """
 
     def __init__(
@@ -33,15 +72,58 @@ class Context:
         self.seq = 0
 
     def compute_nonce(self, seq: int) -> bytes:
+        """
+        Compute nonce for a given sequence number.
+
+        Parameters
+        ----------
+        seq : int
+            Sequence number.
+
+        Returns
+        -------
+        bytes
+            Computed nonce.
+        """
         seq_bytes = I2OSP(seq, self.aead.Nn)
         return xor_bytes(self.base_nonce, seq_bytes)
 
     def increment_seq(self):
+        """
+        Increment the sequence number.
+
+        Raises
+        ------
+        MessageLimitReachedError
+            If sequence number would overflow.
+        """
         if self.seq >= self.aead.max_seq:
             raise MessageLimitReachedError("Sequence number overflow")
         self.seq += 1
 
     def seal(self, aad: bytes, pt: bytes) -> bytes:
+        """
+        Seal (encrypt) a message.
+
+        Parameters
+        ----------
+        aad : bytes
+            Additional authenticated data.
+        pt : bytes
+            Plaintext to encrypt.
+
+        Returns
+        -------
+        bytes
+            Ciphertext.
+
+        Raises
+        ------
+        ValueError
+            If context is not a sender context.
+        MessageLimitReachedError
+            If sequence number would overflow.
+        """
         if self.role != 'S':
             raise ValueError("Only sender context can seal")
         nonce = self.compute_nonce(self.seq)
@@ -50,6 +132,30 @@ class Context:
         return ct
 
     def open(self, aad: bytes, ct: bytes) -> bytes:
+        """
+        Open (decrypt) a message.
+
+        Parameters
+        ----------
+        aad : bytes
+            Additional authenticated data.
+        ct : bytes
+            Ciphertext to decrypt.
+
+        Returns
+        -------
+        bytes
+            Decrypted plaintext.
+
+        Raises
+        ------
+        ValueError
+            If context is not a recipient context.
+        OpenError
+            If decryption fails.
+        MessageLimitReachedError
+            If sequence number would overflow.
+        """
         if self.role != 'R':
             raise ValueError("Only recipient context can open")
         nonce = self.compute_nonce(self.seq)
@@ -58,6 +164,26 @@ class Context:
         return pt
 
     def export(self, exporter_context: bytes, L: int) -> bytes:
+        """
+        Export a secret value.
+
+        Parameters
+        ----------
+        exporter_context : bytes
+            Exporter context.
+        L : int
+            Length of exported secret in bytes.
+
+        Returns
+        -------
+        bytes
+            Exported secret.
+
+        Raises
+        ------
+        ValueError
+            If export length exceeds maximum.
+        """
         if L > 255 * self.kdf.Nh:
             raise ValueError(f"Export length {L} exceeds maximum {255 * self.kdf.Nh}")
         return self.kdf.labeled_expand(
@@ -70,11 +196,21 @@ class Context:
 
 
 class ContextSender(Context):
+    """
+    Sender encryption context.
+
+    A specialized Context for senders that can only seal (encrypt) messages.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__('S', *args, **kwargs)
 
 
 class ContextRecipient(Context):
+    """
+    Recipient decryption context.
+
+    A specialized Context for recipients that can only open (decrypt) messages.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__('R', *args, **kwargs)
 
