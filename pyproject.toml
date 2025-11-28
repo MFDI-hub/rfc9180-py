@@ -1,6 +1,6 @@
 [project]
 name = "rfc9180"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Python implementation of Hybrid Public Key Encryption (HPKE) as specified in RFC 9180"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -33,10 +33,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/DELL/rfc9180-py"
-Documentation = "https://github.com/DELL/rfc9180-py#readme"
-Repository = "https://github.com/DELL/rfc9180-py"
-Issues = "https://github.com/DELL/rfc9180-py/issues"
+Homepage = "https://github.com/MFDI-hub/rfc9180-py"
+Documentation = "https://github.com/MFDI-hub/rfc9180-py#readme"
+Repository = "https://github.com/MFDI-hub/rfc9180-py"
+Issues = "https://github.com/MFDI-hub/rfc9180-py/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -44,6 +44,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rfc9180"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"src/rfc9180/py.typed" = "py.typed"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
