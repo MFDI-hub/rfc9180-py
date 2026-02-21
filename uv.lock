@@ -1592,6 +1592,7 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -1635,6 +1636,7 @@ requires-dist = [
     { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'", specifier = ">=2.3.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=3.0.0" },
+    { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
 provides-extras = ["dev", "docs"]
 

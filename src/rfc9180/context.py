@@ -61,7 +61,7 @@ class Context:
         base_nonce: bytes,
         exporter_secret: bytes,
         suite_id: bytes,
-    ):
+    ) -> None:
         self.role = role
         self.aead = aead
         self.kdf = kdf
@@ -88,7 +88,7 @@ class Context:
         seq_bytes = I2OSP(seq, self.aead.Nn)
         return xor_bytes(self.base_nonce, seq_bytes)
 
-    def increment_seq(self):
+    def increment_seq(self) -> None:
         """
         Increment the sequence number.
 
@@ -202,8 +202,16 @@ class ContextSender(Context):
     A specialized Context for senders that can only seal (encrypt) messages.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__("S", *args, **kwargs)
+    def __init__(
+        self,
+        aead: AEADBase,
+        kdf: KDFBase,
+        key: bytes,
+        base_nonce: bytes,
+        exporter_secret: bytes,
+        suite_id: bytes,
+    ) -> None:
+        super().__init__("S", aead, kdf, key, base_nonce, exporter_secret, suite_id)
 
 
 class ContextRecipient(Context):
@@ -213,5 +221,13 @@ class ContextRecipient(Context):
     A specialized Context for recipients that can only open (decrypt) messages.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__("R", *args, **kwargs)
+    def __init__(
+        self,
+        aead: AEADBase,
+        kdf: KDFBase,
+        key: bytes,
+        base_nonce: bytes,
+        exporter_secret: bytes,
+        suite_id: bytes,
+    ) -> None:
+        super().__init__("R", aead, kdf, key, base_nonce, exporter_secret, suite_id)

@@ -28,7 +28,7 @@ class KDFBase:
         Hash algorithm instance.
     """
 
-    def __init__(self, kdf_id: KDFID):
+    def __init__(self, kdf_id: KDFID) -> None:
         self.kdf_id = kdf_id
         self.Nh = KDF_PARAMS[self.kdf_id]["Nh"]
         self.hash_algorithm = self._get_hash_algorithm()
@@ -37,7 +37,7 @@ class KDFBase:
         self._extract_hash_block_size = self._get_hash_block_size()
         self._max_hash_input_len = self._get_max_hash_input_len()
 
-    def _get_hash_algorithm(self):
+    def _get_hash_algorithm(self) -> hashes.HashAlgorithm:
         """
         Get hash algorithm for the KDF.
 

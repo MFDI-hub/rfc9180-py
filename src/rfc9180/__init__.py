@@ -2,15 +2,30 @@
 hpke package: Hybrid Public Key Encryption (RFC 9180) primitives and APIs.
 """
 
-from typing import cast
+from __future__ import annotations
+
+from typing import Union
+
+from typing_extensions import TypeAlias
+from cryptography.hazmat.primitives.asymmetric.ec import (
+    EllipticCurvePrivateKey,
+    EllipticCurvePublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.x448 import X448PrivateKey, X448PublicKey
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
 from .constants import AEADID, KDFID, KEMID
 from .helpers import append_header, parse_header
+from .jwk import KEMKey, KEMKeyInterface
 from .primitives.aead import AEADBase
 from .primitives.kdf import KDFBase
-from .primitives.kem import DHKEM_P256, DHKEM_P384, DHKEM_P521, DHKEM_X448, DHKEM_X25519
+from .primitives.kem import DHKEM_P256, DHKEM_P384, DHKEM_P521, DHKEM_X448, DHKEM_X25519, KEMBase
 from .setup import HPKESetup
 from .single_shot import HPKESingleShot
+from .types import KEMPrivateKey, KEMPublicKey
+
+HPKEPublicKey: TypeAlias = Union[bytes, KEMPublicKey, KEMKeyInterface]
+HPKEPrivateKey: TypeAlias = Union[bytes, KEMPrivateKey, KEMKeyInterface]
 
 
 class HPKE:
@@ -53,7 +68,7 @@ class HPKE:
         If the KEM ID is unsupported.
     """
 
-    def __init__(self, kem_id: KEMID, kdf_id: KDFID, aead_id: AEADID):
+    def __init__(self, kem_id: KEMID, kdf_id: KDFID, aead_id: AEADID) -> None:
         self.kem_id = kem_id
         self.kdf_id = kdf_id
         self.aead_id = aead_id
@@ -79,7 +94,7 @@ class HPKE:
         """
         return KDFBase(kdf_id)
 
-    def _create_kem(self, kem_id: KEMID):
+    def _create_kem(self, kem_id: KEMID) -> KEMBase:
         """
         Create a KEM instance for the given KEM ID.
 
@@ -126,7 +141,7 @@ class HPKE:
         """
         return AEADBase(aead_id)
 
-    def _deserialize_public_key(self, pk):
+    def _deserialize_public_key(self, pk: HPKEPublicKey) -> KEMPublicKey:
         """
         Deserialize public key from bytes if needed.
 
@@ -142,9 +157,14 @@ class HPKE:
         """
         if isinstance(pk, bytes):
             return self.kem.deserialize_public_key(pk)
+        if isinstance(pk, KEMKeyInterface):
+            raw = pk.raw
+            if not isinstance(raw, (EllipticCurvePublicKey, X25519PublicKey, X448PublicKey)):
+                raise TypeError("Expected a public key")
+            return raw
         return pk
 
-    def _deserialize_private_key(self, sk):
+    def _deserialize_private_key(self, sk: HPKEPrivateKey) -> KEMPrivateKey:
         """
         Deserialize private key from bytes if needed.
 
@@ -160,10 +180,15 @@ class HPKE:
         """
         if isinstance(sk, bytes):
             return self.kem.deserialize_private_key(sk)
+        if isinstance(sk, KEMKeyInterface):
+            raw = sk.raw
+            if not isinstance(raw, (EllipticCurvePrivateKey, X25519PrivateKey, X448PrivateKey)):
+                raise TypeError("Expected a private key")
+            return raw
         return sk
 
     # Key generation methods
-    def generate_key_pair(self):
+    def generate_key_pair(self) -> tuple[KEMPrivateKey, KEMPublicKey]:
         """
         Generate a new key pair for the configured KEM.
 
@@ -175,7 +200,7 @@ class HPKE:
         """
         return self.kem.generate_key_pair()
 
-    def derive_key_pair(self, seed: bytes):
+    def derive_key_pair(self, seed: bytes) -> tuple[KEMPrivateKey, KEMPublicKey]:
         """
         Derive a key pair from a seed using the configured KEM.
 
@@ -197,7 +222,7 @@ class HPKE:
         """
         return self.kem.derive_key_pair(seed)
 
-    def serialize_public_key(self, pk) -> bytes:
+    def serialize_public_key(self, pk: HPKEPublicKey) -> bytes:
         """
         Serialize a public key to bytes.
 
@@ -213,9 +238,9 @@ class HPKE:
         """
         if isinstance(pk, bytes):
             return pk
-        return cast(bytes, self.kem.serialize_public_key(pk))
+        return self.kem.serialize_public_key(self._deserialize_public_key(pk))
 
-    def serialize_private_key(self, sk) -> bytes:
+    def serialize_private_key(self, sk: HPKEPrivateKey) -> bytes:
         """
         Serialize a private key to bytes.
 
@@ -231,10 +256,12 @@ class HPKE:
         """
         if isinstance(sk, bytes):
             return sk
-        return cast(bytes, self.kem.serialize_private_key(sk))
+        return self.kem.serialize_private_key(self._deserialize_private_key(sk))
 
     # Single-shot convenience
-    def seal_base(self, pkR, info: bytes, aad: bytes, pt: bytes):
+    def seal_base(
+        self, pkR: HPKEPublicKey, info: bytes, aad: bytes, pt: bytes
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using Base mode.
 
@@ -257,7 +284,9 @@ class HPKE:
         pkR = self._deserialize_public_key(pkR)
         return self._single_shot.seal_base(pkR, info, aad, pt)
 
-    def open_base(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes):
+    def open_base(
+        self, enc: bytes, skR: HPKEPrivateKey, info: bytes, aad: bytes, ct: bytes
+    ) -> bytes:
         """
         Open (decrypt) a message using Base mode.
 
@@ -287,7 +316,9 @@ class HPKE:
         skR = self._deserialize_private_key(skR)
         return self._single_shot.open_base(enc, skR, info, aad, ct)
 
-    def seal_psk(self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes):
+    def seal_psk(
+        self, pkR: HPKEPublicKey, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using PSK mode.
 
@@ -320,8 +351,15 @@ class HPKE:
         return self._single_shot.seal_psk(pkR, info, aad, pt, psk, psk_id)
 
     def open_psk(
-        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes
-    ):
+        self,
+        enc: bytes,
+        skR: HPKEPrivateKey,
+        info: bytes,
+        aad: bytes,
+        ct: bytes,
+        psk: bytes,
+        psk_id: bytes,
+    ) -> bytes:
         """
         Open (decrypt) a message using PSK mode.
 
@@ -357,7 +395,9 @@ class HPKE:
         skR = self._deserialize_private_key(skR)
         return self._single_shot.open_psk(enc, skR, info, aad, ct, psk, psk_id)
 
-    def seal_auth(self, pkR, info: bytes, aad: bytes, pt: bytes, skS):
+    def seal_auth(
+        self, pkR: HPKEPublicKey, info: bytes, aad: bytes, pt: bytes, skS: HPKEPrivateKey
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using Auth mode.
 
@@ -383,7 +423,15 @@ class HPKE:
         skS = self._deserialize_private_key(skS)
         return self._single_shot.seal_auth(pkR, info, aad, pt, skS)
 
-    def open_auth(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, pkS):
+    def open_auth(
+        self,
+        enc: bytes,
+        skR: HPKEPrivateKey,
+        info: bytes,
+        aad: bytes,
+        ct: bytes,
+        pkS: HPKEPublicKey,
+    ) -> bytes:
         """
         Open (decrypt) a message using Auth mode.
 
@@ -417,8 +465,15 @@ class HPKE:
         return self._single_shot.open_auth(enc, skR, info, aad, ct, pkS)
 
     def seal_auth_psk(
-        self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes, skS
-    ):
+        self,
+        pkR: HPKEPublicKey,
+        info: bytes,
+        aad: bytes,
+        pt: bytes,
+        psk: bytes,
+        psk_id: bytes,
+        skS: HPKEPrivateKey,
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using AuthPSK mode.
 
@@ -454,8 +509,16 @@ class HPKE:
         return self._single_shot.seal_auth_psk(pkR, info, aad, pt, psk, psk_id, skS)
 
     def open_auth_psk(
-        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes, pkS
-    ):
+        self,
+        enc: bytes,
+        skR: HPKEPrivateKey,
+        info: bytes,
+        aad: bytes,
+        ct: bytes,
+        psk: bytes,
+        psk_id: bytes,
+        pkS: HPKEPublicKey,
+    ) -> bytes:
         """
         Open (decrypt) a message using AuthPSK mode.
 
@@ -532,6 +595,8 @@ __all__ = [
     "KDFID",
     "AEADID",
     "HPKE",
+    "KEMKey",
+    "KEMKeyInterface",
     "create_hpke",
     "append_header",
     "parse_header",

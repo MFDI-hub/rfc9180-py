@@ -1,3 +1,6 @@
+import base64
+
+
 def I2OSP(n: int, w: int) -> bytes:
     """
     Convert non-negative integer to a w-length big-endian byte string.
@@ -84,3 +87,24 @@ def concat(*args: bytes) -> bytes:
         Concatenated byte string.
     """
     return b"".join(args)
+
+
+def base64url_decode(value: str) -> bytes:
+    """
+    Decode a base64url string (with optional omitted padding).
+
+    Parameters
+    ----------
+    value : str
+        Base64url-encoded string.
+
+    Returns
+    -------
+    bytes
+        Decoded bytes.
+    """
+    encoded = value.encode("ascii")
+    remainder = len(encoded) % 4
+    if remainder:
+        encoded += b"=" * (4 - remainder)
+    return base64.urlsafe_b64decode(encoded)

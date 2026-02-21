@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import Union
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 from ..constants import AEAD_PARAMS, AEADID
@@ -32,7 +35,7 @@ class AEADBase:
         Maximum sequence number before overflow.
     """
 
-    def __init__(self, aead_id: AEADID):
+    def __init__(self, aead_id: AEADID) -> None:
         self.aead_id = aead_id
         params = AEAD_PARAMS[aead_id]
         self.Nk = params["Nk"]
@@ -41,7 +44,7 @@ class AEADBase:
         self.cipher = self._get_cipher()
         self.max_seq = (1 << (8 * self.Nn)) - 1 if self.Nn > 0 else 0
 
-    def _get_cipher(self):
+    def _get_cipher(self) -> Union[Callable[[bytes], Union[AESGCM, ChaCha20Poly1305]], None]:
         """
         Get cipher factory function for the AEAD algorithm.
 
@@ -98,8 +101,10 @@ class AEADBase:
             raise ValueError(f"Invalid key length: {len(key)}")
         if len(nonce) != self.Nn:
             raise ValueError(f"Invalid nonce length: {len(nonce)}")
+        if self.cipher is None:
+            raise ValueError("Cipher not configured")
         try:
-            return self.cipher(key).encrypt(nonce, pt, aad)  # type: ignore[no-any-return]
+            return self.cipher(key).encrypt(nonce, pt, aad)
         except Exception as e:
             # Commonly thrown when nonce reuse or limits exceeded
             raise MessageLimitReachedError(f"Seal failed: {e}") from e
@@ -137,7 +142,9 @@ class AEADBase:
             raise ValueError(f"Invalid key length: {len(key)}")
         if len(nonce) != self.Nn:
             raise ValueError(f"Invalid nonce length: {len(nonce)}")
+        if self.cipher is None:
+            raise ValueError("Cipher not configured")
         try:
-            return self.cipher(key).decrypt(nonce, ct, aad)  # type: ignore[no-any-return]
+            return self.cipher(key).decrypt(nonce, ct, aad)
         except Exception as e:
             raise OpenError(f"Decryption failed: {e}") from e

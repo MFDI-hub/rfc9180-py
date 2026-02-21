@@ -25,6 +25,7 @@ classifiers = [
 
 dependencies = [
     "cryptography>=41.0.0",
+    "typing_extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -116,8 +117,7 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.9"
-# Gradual strict: match pyhpke goals; enable strict = true once types are complete
-strict = false
+strict = true
 disallow_any_unimported = true
 warn_unreachable = true
 ignore_missing_imports = false

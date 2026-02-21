@@ -1,4 +1,5 @@
 from .setup import HPKESetup
+from .types import KEMPrivateKey, KEMPublicKey
 
 
 class HPKESingleShot:
@@ -23,7 +24,9 @@ class HPKESingleShot:
         self.setup = setup
 
     # Base Mode
-    def seal_base(self, pkR, info: bytes, aad: bytes, pt: bytes) -> tuple[bytes, bytes]:
+    def seal_base(
+        self, pkR: KEMPublicKey, info: bytes, aad: bytes, pt: bytes
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using Base mode.
 
@@ -46,7 +49,9 @@ class HPKESingleShot:
         enc, ctx = self.setup.setup_base_sender(pkR, info)
         return enc, ctx.seal(aad, pt)
 
-    def open_base(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes) -> bytes:
+    def open_base(
+        self, enc: bytes, skR: KEMPrivateKey, info: bytes, aad: bytes, ct: bytes
+    ) -> bytes:
         """
         Open (decrypt) a message using Base mode.
 
@@ -78,7 +83,7 @@ class HPKESingleShot:
 
     # PSK Mode
     def seal_psk(
-        self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes
+        self, pkR: KEMPublicKey, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes
     ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using PSK mode.
@@ -112,7 +117,14 @@ class HPKESingleShot:
         return enc, ctx.seal(aad, pt)
 
     def open_psk(
-        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes
+        self,
+        enc: bytes,
+        skR: KEMPrivateKey,
+        info: bytes,
+        aad: bytes,
+        ct: bytes,
+        psk: bytes,
+        psk_id: bytes,
     ) -> bytes:
         """
         Open (decrypt) a message using PSK mode.
@@ -150,7 +162,9 @@ class HPKESingleShot:
         return ctx.open(aad, ct)
 
     # Auth Mode
-    def seal_auth(self, pkR, info: bytes, aad: bytes, pt: bytes, skS) -> tuple[bytes, bytes]:
+    def seal_auth(
+        self, pkR: KEMPublicKey, info: bytes, aad: bytes, pt: bytes, skS: KEMPrivateKey
+    ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using Auth mode.
 
@@ -175,7 +189,9 @@ class HPKESingleShot:
         enc, ctx = self.setup.setup_auth_sender(pkR, info, skS)
         return enc, ctx.seal(aad, pt)
 
-    def open_auth(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, pkS) -> bytes:
+    def open_auth(
+        self, enc: bytes, skR: KEMPrivateKey, info: bytes, aad: bytes, ct: bytes, pkS: KEMPublicKey
+    ) -> bytes:
         """
         Open (decrypt) a message using Auth mode.
 
@@ -209,7 +225,14 @@ class HPKESingleShot:
 
     # AuthPSK Mode
     def seal_auth_psk(
-        self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes, skS
+        self,
+        pkR: KEMPublicKey,
+        info: bytes,
+        aad: bytes,
+        pt: bytes,
+        psk: bytes,
+        psk_id: bytes,
+        skS: KEMPrivateKey,
     ) -> tuple[bytes, bytes]:
         """
         Seal (encrypt) a message using AuthPSK mode.
@@ -245,7 +268,15 @@ class HPKESingleShot:
         return enc, ctx.seal(aad, pt)
 
     def open_auth_psk(
-        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes, pkS
+        self,
+        enc: bytes,
+        skR: KEMPrivateKey,
+        info: bytes,
+        aad: bytes,
+        ct: bytes,
+        psk: bytes,
+        psk_id: bytes,
+        pkS: KEMPublicKey,
     ) -> bytes:
         """
         Open (decrypt) a message using AuthPSK mode.
@@ -286,7 +317,7 @@ class HPKESingleShot:
 
     # Export-only helpers
     def send_export_base(
-        self, pkR, info: bytes, exporter_context: bytes, L: int
+        self, pkR: KEMPublicKey, info: bytes, exporter_context: bytes, L: int
     ) -> tuple[bytes, bytes]:
         """
         Export a secret using Base mode (sender side).
@@ -311,7 +342,7 @@ class HPKESingleShot:
         return enc, ctx.export(exporter_context, L)
 
     def receive_export_base(
-        self, enc: bytes, skR, info: bytes, exporter_context: bytes, L: int
+        self, enc: bytes, skR: KEMPrivateKey, info: bytes, exporter_context: bytes, L: int
     ) -> bytes:
         """
         Export a secret using Base mode (recipient side).
@@ -338,7 +369,13 @@ class HPKESingleShot:
         return ctx.export(exporter_context, L)
 
     def send_export_psk(
-        self, pkR, info: bytes, exporter_context: bytes, L: int, psk: bytes, psk_id: bytes
+        self,
+        pkR: KEMPublicKey,
+        info: bytes,
+        exporter_context: bytes,
+        L: int,
+        psk: bytes,
+        psk_id: bytes,
     ) -> tuple[bytes, bytes]:
         """
         Export a secret using PSK mode (sender side).
@@ -374,7 +411,7 @@ class HPKESingleShot:
     def receive_export_psk(
         self,
         enc: bytes,
-        skR,
+        skR: KEMPrivateKey,
         info: bytes,
         exporter_context: bytes,
         L: int,
@@ -415,7 +452,7 @@ class HPKESingleShot:
         return ctx.export(exporter_context, L)
 
     def send_export_auth(
-        self, pkR, info: bytes, exporter_context: bytes, L: int, skS
+        self, pkR: KEMPublicKey, info: bytes, exporter_context: bytes, L: int, skS: KEMPrivateKey
     ) -> tuple[bytes, bytes]:
         """
         Export a secret using Auth mode (sender side).
@@ -442,7 +479,13 @@ class HPKESingleShot:
         return enc, ctx.export(exporter_context, L)
 
     def receive_export_auth(
-        self, enc: bytes, skR, info: bytes, exporter_context: bytes, L: int, pkS
+        self,
+        enc: bytes,
+        skR: KEMPrivateKey,
+        info: bytes,
+        exporter_context: bytes,
+        L: int,
+        pkS: KEMPublicKey,
     ) -> bytes:
         """
         Export a secret using Auth mode (recipient side).
@@ -471,7 +514,14 @@ class HPKESingleShot:
         return ctx.export(exporter_context, L)
 
     def send_export_auth_psk(
-        self, pkR, info: bytes, exporter_context: bytes, L: int, psk: bytes, psk_id: bytes, skS
+        self,
+        pkR: KEMPublicKey,
+        info: bytes,
+        exporter_context: bytes,
+        L: int,
+        psk: bytes,
+        psk_id: bytes,
+        skS: KEMPrivateKey,
     ) -> tuple[bytes, bytes]:
         """
         Export a secret using AuthPSK mode (sender side).
@@ -509,13 +559,13 @@ class HPKESingleShot:
     def receive_export_auth_psk(
         self,
         enc: bytes,
-        skR,
+        skR: KEMPrivateKey,
         info: bytes,
         exporter_context: bytes,
         L: int,
         psk: bytes,
         psk_id: bytes,
-        pkS,
+        pkS: KEMPublicKey,
     ) -> bytes:
         """
         Export a secret using AuthPSK mode (recipient side).
