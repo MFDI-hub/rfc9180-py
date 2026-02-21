@@ -32,6 +32,10 @@ class KDFBase:
         self.kdf_id = kdf_id
         self.Nh = KDF_PARAMS[self.kdf_id]['Nh']
         self.hash_algorithm = self._get_hash_algorithm()
+        # RFC 9180 §7.2.1 input-length accounting constants.
+        self._version_label_len = len(b"HPKE-v1")
+        self._extract_hash_block_size = self._get_hash_block_size()
+        self._max_hash_input_len = self._get_max_hash_input_len()
 
     def _get_hash_algorithm(self):
         """
@@ -48,6 +52,55 @@ class KDFBase:
             KDFID.HKDF_SHA512: hashes.SHA512(),
         }
         return mapping[self.kdf_id]
+
+    def _get_hash_block_size(self) -> int:
+        """
+        Return the underlying hash block size (Nb) in bytes.
+        """
+        mapping = {
+            KDFID.HKDF_SHA256: 64,
+            KDFID.HKDF_SHA384: 128,
+            KDFID.HKDF_SHA512: 128,
+        }
+        return mapping[self.kdf_id]
+
+    def _get_max_hash_input_len(self) -> int:
+        """
+        Return the maximum hash input length in bytes.
+
+        SHA-256 allows messages of at most (2^64 - 1) bits => 2^61 - 1 bytes.
+        SHA-384/SHA-512 allow messages of at most (2^128 - 1) bits => 2^125 - 1 bytes.
+        """
+        if self.kdf_id == KDFID.HKDF_SHA256:
+            return (1 << 61) - 1
+        return (1 << 125) - 1
+
+    def _max_labeled_extract_ikm_len(self, label_len: int, suite_id_len: int) -> int:
+        """
+        RFC 9180 §7.2.1 limit for the ikm argument to LabeledExtract().
+        """
+        return (
+            self._max_hash_input_len
+            - self._extract_hash_block_size
+            - self._version_label_len
+            - suite_id_len
+            - label_len
+        )
+
+    def _max_labeled_expand_info_len(self, label_len: int, suite_id_len: int) -> int:
+        """
+        RFC 9180 §7.2.1 limit for the info argument to LabeledExpand().
+        """
+        return (
+            self._max_hash_input_len
+            - self._extract_hash_block_size
+            - self.Nh
+            - self._version_label_len
+            - suite_id_len
+            - label_len
+            - 2  # I2OSP(L, 2)
+            - 1  # HKDF-Expand block counter octet
+        )
 
     def extract(self, salt: bytes, ikm: bytes) -> bytes:
         """
@@ -125,10 +178,17 @@ class KDFBase:
         bytes
             Pseudorandom key (PRK).
         """
+        label_bytes = label.encode('ascii')
+        max_ikm_len = self._max_labeled_extract_ikm_len(len(label_bytes), len(suite_id))
+        if len(ikm) > max_ikm_len:
+            raise ValueError(
+                f"LabeledExtract ikm length {len(ikm)} exceeds maximum {max_ikm_len}"
+            )
+
         labeled_ikm = concat(
             b"HPKE-v1",
             suite_id,
-            label.encode('ascii'),
+            label_bytes,
             ikm,
         )
         return self.extract(salt, labeled_ikm)
@@ -160,11 +220,18 @@ class KDFBase:
         ValueError
             If requested length exceeds maximum (255 * Nh).
         """
+        label_bytes = label.encode('ascii')
+        max_info_len = self._max_labeled_expand_info_len(len(label_bytes), len(suite_id))
+        if len(info) > max_info_len:
+            raise ValueError(
+                f"LabeledExpand info length {len(info)} exceeds maximum {max_info_len}"
+            )
+
         labeled_info = concat(
             I2OSP(L, 2),
             b"HPKE-v1",
             suite_id,
-            label.encode('ascii'),
+            label_bytes,
             info,
         )
         return self.expand(prk, labeled_info, L)
