@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 _SETUP_HEADER_RE = re.compile(r"^(A\.\d+\.\d+)\.\s+.+Setup Information$")
 _ENCRYPTION_HEADER_RE = re.compile(r"^(A\.\d+\.\d+)\.1\.\s+Encryptions$")
@@ -46,7 +46,7 @@ def _finalize_case(case: dict[str, Any]) -> dict[str, Any]:
     return case
 
 
-def parse_appendix_a_vectors(rfc_path: str | Path) -> list[dict[str, Any]]:
+def parse_appendix_a_vectors(rfc_path: Union[str, Path]) -> list[dict[str, Any]]:
     path = Path(rfc_path)
     lines = path.read_text(encoding="utf-8").splitlines()
 
@@ -60,11 +60,11 @@ def parse_appendix_a_vectors(rfc_path: str | Path) -> list[dict[str, Any]]:
     start = appendix_indices[-1]
 
     vectors: list[dict[str, Any]] = []
-    current_case: dict[str, Any] | None = None
-    current_block: str | None = None  # "setup", "encryptions", "exports"
-    current_encryption: dict[str, Any] | None = None
-    current_export: dict[str, Any] | None = None
-    pending_hex_target: tuple[dict[str, Any], str] | None = None
+    current_case: Optional[dict[str, Any]] = None
+    current_block: Optional[str] = None  # "setup", "encryptions", "exports"
+    current_encryption: Optional[dict[str, Any]] = None
+    current_export: Optional[dict[str, Any]] = None
+    pending_hex_target: Optional[tuple[dict[str, Any], str]] = None
 
     def flush_encryption() -> None:
         nonlocal current_encryption

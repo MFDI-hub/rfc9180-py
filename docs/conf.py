@@ -23,6 +23,7 @@ extensions = [
 ]
 try:
     import sphinx_autodoc_typehints  # noqa: F401
+
     extensions.append("sphinx_autodoc_typehints")
 except ImportError:
     pass
@@ -33,6 +34,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # Use Read the Docs theme if installed (pip install ".[docs]"), else default
 try:
     import sphinx_rtd_theme  # noqa: F401
+
     html_theme = "sphinx_rtd_theme"
 except ImportError:
     html_theme = "alabaster"
