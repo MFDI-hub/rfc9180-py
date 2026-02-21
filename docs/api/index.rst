@@ -9,6 +9,7 @@ Public API
 
    rfc9180
    constants
+   jwk
    exceptions
    helpers
    setup

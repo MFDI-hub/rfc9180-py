@@ -25,8 +25,9 @@ Features
 - **Multiple ciphersuites**: KEM (X25519, X448, P-256, P-384, P-521), KDF (HKDF-SHA256/384/512), AEAD (AES-128/256-GCM, ChaCha20-Poly1305, EXPORT_ONLY)
 - **Single-shot APIs**: One-call seal/open per mode
 - **Context APIs**: Multi-message encryption with automatic nonce management
-- **Secret export**: Export application secrets from HPKE contexts
-- **Key management**: Generate, derive, serialize keys; accept keys as bytes or key objects
+- **Secret export**: Export application secrets from HPKE contexts (single-shot and context APIs)
+- **Key management**: Generate, derive, serialize keys; accept keys as bytes, key objects, or JWK/PEM
+- **JWK and PEM support**: Load keys from JSON Web Key (EC, X25519, X448) or PEM format via ``KEMKey``
 - **Message encoding helpers**: Self-describing header format (``append_header`` / ``parse_header``)
 
 Contents
@@ -37,6 +38,7 @@ Contents
 
    installation
    quickstart
+   examples
    api/index
 
 Indices and tables

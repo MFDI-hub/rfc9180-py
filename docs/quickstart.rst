@@ -32,6 +32,13 @@ Key generation and serialization
    # seal/open accept both bytes and key objects
    enc, ct = hpke.seal_base(pk_bytes, info, aad, pt)
 
+Derive a key pair from a seed (deterministic key generation):
+
+.. code-block:: python
+
+   seed = b"your-32-byte-or-longer-secret-seed-material"
+   skR, pkR = hpke.derive_key_pair(seed)
+
 Single-shot encryption (Base mode)
 ----------------------------------
 
@@ -91,9 +98,16 @@ Use the setup methods to get sender/recipient contexts, then seal/open multiple 
 Secret export
 -------------
 
+Setup a context and export a secret (no encryption, just key agreement + export):
+
 .. code-block:: python
 
+   enc, ctx_sender = hpke.setup.setup_base_sender(pkR, info)
    secret = ctx_sender.export(b"exporter-context", 32)
+
+   # Recipient side:
+   ctx_recipient = hpke.setup.setup_base_recipient(enc, skR, info)
+   secret = ctx_recipient.export(b"exporter-context", 32)
 
 Message encoding helpers
 ------------------------
@@ -115,17 +129,62 @@ Encode/parse a self-describing wire format (header + enc + ct):
    kem_id, kdf_id, aead_id, mode, enc2, ct2 = parse_header(msg, enc_len=hpke.kem.Nenc)
    pt2 = hpke.open_base(enc2, skR, info, aad, ct2)
 
+Using different ciphersuites
+-----------------------------
+
+.. code-block:: python
+
+   # ChaCha20-Poly1305 (no AES dependency)
+   hpke_chacha = HPKE(
+       KEMID.DHKEM_X25519_HKDF_SHA256,
+       KDFID.HKDF_SHA256,
+       AEADID.CHACHA20_POLY1305,
+   )
+
+   # P-256 for NIST compliance
+   hpke_p256 = HPKE(
+       KEMID.DHKEM_P256_HKDF_SHA256,
+       KDFID.HKDF_SHA256,
+       AEADID.AES_128_GCM,
+   )
+
+Using keys from JWK or PEM
+--------------------------
+
+.. code-block:: python
+
+   from rfc9180 import HPKE, KEMKey, create_hpke
+
+   hpke = create_hpke()
+
+   # From JWK (JSON Web Key)
+   jwk_dict = {"kty": "OKP", "crv": "X25519", "x": "base64url-public-key"}
+   pkR = KEMKey.from_jwk(jwk_dict)
+   enc, ct = hpke.seal_base(pkR, info, aad, pt)
+
+   # From PEM
+   pem_str = "-----BEGIN PUBLIC KEY-----\n..."
+   pkR = KEMKey.from_pem(pem_str)
+
 Error handling
 --------------
 
 .. code-block:: python
 
-   from rfc9180.exceptions import OpenError, MessageLimitReachedError
+   from rfc9180.exceptions import (
+       OpenError,
+       MessageLimitReachedError,
+       DeserializeError,
+       DecapError,
+   )
 
    try:
        pt = hpke.open_base(enc, skR, info, aad, ct)
    except OpenError:
        # Decryption failed (wrong key, tampered data, etc.)
        pass
+   except DecapError:
+       # Invalid encapsulated key or decapsulation failed
+       pass
 
-For full API details, see :doc:`api/index`.
+For full API details, see :doc:`api/index`. For more complete examples, see :doc:`examples`.
