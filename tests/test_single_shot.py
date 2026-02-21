@@ -53,5 +53,3 @@ def test_single_shot_psk():
     enc, ct = single.seal_psk(pkR, info, aad, pt, psk, psk_id)
     out = single.open_psk(enc, skR, info, aad, ct, psk, psk_id)
     assert out == pt
-
-

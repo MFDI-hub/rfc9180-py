@@ -62,13 +62,15 @@ def test_hpke_vector(vector_idx, test_vectors):
 
     # Verify recipient public key matches expected
     pkR_expected = bytes.fromhex(vec["pkRm"])
-    assert kem.serialize_public_key(pkR) == pkR_expected, \
+    assert kem.serialize_public_key(pkR) == pkR_expected, (
         f"Recipient public key mismatch in vector {vector_idx}"
+    )
 
     # Verify recipient private key serialization matches expected
     skR_expected = bytes.fromhex(vec["skRm"])
-    assert kem.serialize_private_key(skR) == skR_expected, \
+    assert kem.serialize_private_key(skR) == skR_expected, (
         f"Recipient private key mismatch in vector {vector_idx}"
+    )
 
     # Derive ephemeral key pair if present
     ikmE = bytes.fromhex(vec["ikmE"])
@@ -76,18 +78,21 @@ def test_hpke_vector(vector_idx, test_vectors):
 
     # Verify ephemeral public key matches expected
     pkE_expected = bytes.fromhex(vec["pkEm"])
-    assert kem.serialize_public_key(pkE) == pkE_expected, \
+    assert kem.serialize_public_key(pkE) == pkE_expected, (
         f"Ephemeral public key mismatch in vector {vector_idx}"
+    )
 
     # Verify ephemeral private key serialization matches expected
     skE_expected = bytes.fromhex(vec["skEm"])
-    assert kem.serialize_private_key(skE) == skE_expected, \
+    assert kem.serialize_private_key(skE) == skE_expected, (
         f"Ephemeral private key mismatch in vector {vector_idx}"
+    )
 
     # Verify enc value matches expected
     enc_expected = bytes.fromhex(vec["enc"])
-    assert kem.serialize_public_key(pkE) == enc_expected, \
+    assert kem.serialize_public_key(pkE) == enc_expected, (
         f"Enc value mismatch in vector {vector_idx}"
+    )
 
     # Derive sender key pair for AUTH modes
     skS = None
@@ -98,13 +103,15 @@ def test_hpke_vector(vector_idx, test_vectors):
 
         # Verify sender public key matches expected
         pkS_expected = bytes.fromhex(vec["pkSm"])
-        assert kem.serialize_public_key(pkS) == pkS_expected, \
+        assert kem.serialize_public_key(pkS) == pkS_expected, (
             f"Sender public key mismatch in vector {vector_idx}"
+        )
 
         # Verify sender private key serialization matches expected
         skS_expected = bytes.fromhex(vec["skSm"])
-        assert kem.serialize_private_key(skS) == skS_expected, \
+        assert kem.serialize_private_key(skS) == skS_expected, (
             f"Sender private key mismatch in vector {vector_idx}"
+        )
 
     # Extract PSK if present
     psk = bytes.fromhex(vec.get("psk", "")) if "psk" in vec else b""
@@ -116,56 +123,49 @@ def test_hpke_vector(vector_idx, test_vectors):
     # Compute shared secret using deterministic keys
     # For deterministic test vectors, we use the provided ephemeral key
     enc = enc_expected
-    if mode == HPKEMode.MODE_BASE:
+    if mode == HPKEMode.MODE_BASE or mode == HPKEMode.MODE_PSK:
         shared_secret = kem.decap(enc, skR)
-    elif mode == HPKEMode.MODE_PSK:
-        shared_secret = kem.decap(enc, skR)
-    elif mode == HPKEMode.MODE_AUTH:
-        shared_secret = kem.auth_decap(enc, skR, pkS)
-    elif mode == HPKEMode.MODE_AUTH_PSK:
+    elif mode == HPKEMode.MODE_AUTH or mode == HPKEMode.MODE_AUTH_PSK:
         shared_secret = kem.auth_decap(enc, skR, pkS)
 
     # Verify shared secret matches expected
     shared_secret_expected = bytes.fromhex(vec["shared_secret"])
-    assert shared_secret == shared_secret_expected, \
-        f"Shared secret mismatch in vector {vector_idx}"
+    assert shared_secret == shared_secret_expected, f"Shared secret mismatch in vector {vector_idx}"
 
     # Setup contexts to verify intermediate key schedule values
-    ctx_sender = setup.key_schedule(
-        'S', mode, shared_secret, info, psk=psk, psk_id=psk_id
-    )
-    ctx_recipient = setup.key_schedule(
-        'R', mode, shared_secret, info, psk=psk, psk_id=psk_id
-    )
+    ctx_sender = setup.key_schedule("S", mode, shared_secret, info, psk=psk, psk_id=psk_id)
+    ctx_recipient = setup.key_schedule("R", mode, shared_secret, info, psk=psk, psk_id=psk_id)
 
     # Verify intermediate key schedule values if present
     if "key" in vec and vec["key"]:
         key_expected = bytes.fromhex(vec["key"])
-        assert ctx_sender.key == key_expected, \
-            f"Key mismatch in vector {vector_idx}"
-        assert ctx_recipient.key == key_expected, \
+        assert ctx_sender.key == key_expected, f"Key mismatch in vector {vector_idx}"
+        assert ctx_recipient.key == key_expected, (
             f"Key mismatch in recipient context for vector {vector_idx}"
+        )
 
     if "base_nonce" in vec and vec["base_nonce"]:
         base_nonce_expected = bytes.fromhex(vec["base_nonce"])
-        assert ctx_sender.base_nonce == base_nonce_expected, \
+        assert ctx_sender.base_nonce == base_nonce_expected, (
             f"Base nonce mismatch in vector {vector_idx}"
-        assert ctx_recipient.base_nonce == base_nonce_expected, \
+        )
+        assert ctx_recipient.base_nonce == base_nonce_expected, (
             f"Base nonce mismatch in recipient context for vector {vector_idx}"
+        )
 
     if "exporter_secret" in vec and vec["exporter_secret"]:
         exporter_secret_expected = bytes.fromhex(vec["exporter_secret"])
-        assert ctx_sender.exporter_secret == exporter_secret_expected, \
+        assert ctx_sender.exporter_secret == exporter_secret_expected, (
             f"Exporter secret mismatch in vector {vector_idx}"
-        assert ctx_recipient.exporter_secret == exporter_secret_expected, \
+        )
+        assert ctx_recipient.exporter_secret == exporter_secret_expected, (
             f"Exporter secret mismatch in recipient context for vector {vector_idx}"
+        )
 
     # Test encryption/decryption if encryptions are present
     if "encryptions" in vec and len(vec["encryptions"]) > 0:
         # Test encryption: create fresh sender context and encrypt each message
-        ctx_sender_enc = setup.key_schedule(
-            'S', mode, shared_secret, info, psk=psk, psk_id=psk_id
-        )
+        ctx_sender_enc = setup.key_schedule("S", mode, shared_secret, info, psk=psk, psk_id=psk_id)
         for idx, enc_data in enumerate(vec["encryptions"]):
             aad = bytes.fromhex(enc_data["aad"])
             ct_expected = bytes.fromhex(enc_data["ct"])
@@ -173,12 +173,13 @@ def test_hpke_vector(vector_idx, test_vectors):
 
             # Encrypt with sender context and verify ciphertext matches
             ct_actual = ctx_sender_enc.seal(aad, pt_expected)
-            assert ct_actual == ct_expected, \
+            assert ct_actual == ct_expected, (
                 f"Ciphertext mismatch in vector {vector_idx}, encryption {idx} (aad: {enc_data.get('aad', 'unknown')})"
+            )
 
         # Test decryption: create fresh recipient context and decrypt each message
         ctx_recipient_dec = setup.key_schedule(
-            'R', mode, shared_secret, info, psk=psk, psk_id=psk_id
+            "R", mode, shared_secret, info, psk=psk, psk_id=psk_id
         )
         for idx, enc_data in enumerate(vec["encryptions"]):
             aad = bytes.fromhex(enc_data["aad"])
@@ -187,8 +188,9 @@ def test_hpke_vector(vector_idx, test_vectors):
 
             # Decrypt with recipient context and verify plaintext matches
             pt_actual = ctx_recipient_dec.open(aad, ct_expected)
-            assert pt_actual == pt_expected, \
+            assert pt_actual == pt_expected, (
                 f"Plaintext mismatch in vector {vector_idx}, encryption {idx} (aad: {enc_data.get('aad', 'unknown')})"
+            )
 
     # Test export functionality if exports are present
     if "exports" in vec and len(vec["exports"]) > 0:
@@ -204,9 +206,10 @@ def test_hpke_vector(vector_idx, test_vectors):
             exported_sender = ctx_sender.export(exporter_context, L)
             exported_recipient = ctx_recipient.export(exporter_context, L)
 
-            assert exported_sender == exported_recipient, \
+            assert exported_sender == exported_recipient, (
                 f"Export mismatch between sender and recipient in vector {vector_idx}"
+            )
 
-            assert exported_sender == exported_value_expected, \
+            assert exported_sender == exported_value_expected, (
                 f"Export value mismatch in vector {vector_idx}, context {export_data.get('exporter_context', '')}"
-
+            )

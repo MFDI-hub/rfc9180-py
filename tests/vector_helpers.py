@@ -5,8 +5,8 @@ from rfc9180.primitives.kem import (
     DHKEM_P256,
     DHKEM_P384,
     DHKEM_P521,
-    DHKEM_X25519,
     DHKEM_X448,
+    DHKEM_X25519,
 )
 
 

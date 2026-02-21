@@ -35,9 +35,9 @@ class AEADBase:
     def __init__(self, aead_id: AEADID):
         self.aead_id = aead_id
         params = AEAD_PARAMS[aead_id]
-        self.Nk = params['Nk']
-        self.Nn = params['Nn']
-        self.Nt = params['Nt']
+        self.Nk = params["Nk"]
+        self.Nn = params["Nn"]
+        self.Nt = params["Nt"]
         self.cipher = self._get_cipher()
         self.max_seq = (1 << (8 * self.Nn)) - 1 if self.Nn > 0 else 0
 
@@ -141,5 +141,3 @@ class AEADBase:
             return self.cipher(key).decrypt(nonce, ct, aad)  # type: ignore[no-any-return]
         except Exception as e:
             raise OpenError(f"Decryption failed: {e}") from e
-
-

@@ -1,9 +1,9 @@
-from typing import Tuple
-
 from .utils import I2OSP, concat
 
 
-def append_header(enc: bytes, ct: bytes, kem_id: int, kdf_id: int, aead_id: int, mode: int) -> bytes:
+def append_header(
+    enc: bytes, ct: bytes, kem_id: int, kdf_id: int, aead_id: int, mode: int
+) -> bytes:
     """
     Encode an HPKE message with a self-describing header.
 
@@ -39,7 +39,7 @@ def append_header(enc: bytes, ct: bytes, kem_id: int, kdf_id: int, aead_id: int,
     return header + enc + ct
 
 
-def parse_header(msg: bytes, enc_len: int) -> Tuple[int, int, int, int, bytes, bytes]:
+def parse_header(msg: bytes, enc_len: int) -> tuple[int, int, int, int, bytes, bytes]:
     """
     Parse a self-describing HPKE message.
 
@@ -84,5 +84,3 @@ def parse_header(msg: bytes, enc_len: int) -> Tuple[int, int, int, int, bytes, b
     ct = msg[offset + enc_len :]
 
     return kem_id, kdf_id, aead_id, mode, enc, ct
-
-

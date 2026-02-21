@@ -13,7 +13,14 @@ def test_context_nonce_computation():
     key = b"\x00" * aead.Nk
     base_nonce = b"\x01" * aead.Nn
     suite_id = b"HPKE\x00\x00\x00\x01\x00\x01"  # arbitrary
-    sender = ContextSender(aead=aead, kdf=kdf, key=key, base_nonce=base_nonce, exporter_secret=b"\x00" * kdf.Nh, suite_id=suite_id)
+    sender = ContextSender(
+        aead=aead,
+        kdf=kdf,
+        key=key,
+        base_nonce=base_nonce,
+        exporter_secret=b"\x00" * kdf.Nh,
+        suite_id=suite_id,
+    )
     nonce0 = sender.compute_nonce(0)
     assert nonce0 == base_nonce
     nonce1 = sender.compute_nonce(1)
@@ -27,8 +34,12 @@ def test_context_seal_open_roundtrip():
     base_nonce = secrets.token_bytes(aead.Nn)
     suite_id = b"HPKE\x00\x00\x00\x01\x00\x01"
     exp = secrets.token_bytes(kdf.Nh)
-    sender = ContextSender(aead=aead, kdf=kdf, key=key, base_nonce=base_nonce, exporter_secret=exp, suite_id=suite_id)
-    recipient = ContextRecipient(aead=aead, kdf=kdf, key=key, base_nonce=base_nonce, exporter_secret=exp, suite_id=suite_id)
+    sender = ContextSender(
+        aead=aead, kdf=kdf, key=key, base_nonce=base_nonce, exporter_secret=exp, suite_id=suite_id
+    )
+    recipient = ContextRecipient(
+        aead=aead, kdf=kdf, key=key, base_nonce=base_nonce, exporter_secret=exp, suite_id=suite_id
+    )
     aad = b""
     pt1 = b"hello"
     pt2 = b"world"
@@ -36,5 +47,3 @@ def test_context_seal_open_roundtrip():
     ct2 = sender.seal(aad, pt2)
     assert recipient.open(aad, ct1) == pt1
     assert recipient.open(aad, ct2) == pt2
-
-

@@ -11,7 +11,7 @@ def test_key_generation_p256():
 
 def test_derive_key_pair_p256_deterministic():
     kem = DHKEM_P256()
-    ikm = b"P256 deterministic seed.........."[:kem.Nsk]
+    ikm = b"P256 deterministic seed.........."[: kem.Nsk]
     sk1, pk1 = kem.derive_key_pair(ikm)
     sk2, pk2 = kem.derive_key_pair(ikm)
     assert kem.serialize_public_key(pk1) == kem.serialize_public_key(pk2)
@@ -34,5 +34,3 @@ def test_auth_encap_decap_p256():
     ss_s, enc = kem.auth_encap(pkR, skS)
     ss_r = kem.auth_decap(enc, skR, pkS)
     assert ss_s == ss_r
-
-

@@ -2,7 +2,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 _SETUP_HEADER_RE = re.compile(r"^(A\.\d+\.\d+)\.\s+.+Setup Information$")
 _ENCRYPTION_HEADER_RE = re.compile(r"^(A\.\d+\.\d+)\.1\.\s+Encryptions$")
 _EXPORT_HEADER_RE = re.compile(r"^(A\.\d+\.\d+)\.2\.\s+Exported Values$")
@@ -52,7 +51,9 @@ def parse_appendix_a_vectors(rfc_path: str | Path) -> list[dict[str, Any]]:
     lines = path.read_text(encoding="utf-8").splitlines()
 
     # Parse only Appendix A onwards.
-    appendix_indices = [i for i, line in enumerate(lines) if line.strip() == "Appendix A.  Test Vectors"]
+    appendix_indices = [
+        i for i, line in enumerate(lines) if line.strip() == "Appendix A.  Test Vectors"
+    ]
     if not appendix_indices:
         raise ValueError("Could not locate 'Appendix A.  Test Vectors' in RFC text")
     # RFC text includes this heading in the table of contents too; parse from the actual appendix.

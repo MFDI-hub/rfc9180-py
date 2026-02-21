@@ -4,6 +4,7 @@ class HPKEError(Exception):
 
     All HPKE-specific exceptions inherit from this class.
     """
+
     pass
 
 
@@ -14,6 +15,7 @@ class ValidationError(HPKEError):
     Raised when KEM operations fail validation checks, such as
     all-zero DH outputs.
     """
+
     pass
 
 
@@ -24,6 +26,7 @@ class DeserializeError(HPKEError):
     Raised when key deserialization fails due to invalid format
     or length.
     """
+
     pass
 
 
@@ -33,6 +36,7 @@ class EncapError(HPKEError):
 
     Raised when key encapsulation operations fail.
     """
+
     pass
 
 
@@ -42,6 +46,7 @@ class DecapError(HPKEError):
 
     Raised when key decapsulation operations fail.
     """
+
     pass
 
 
@@ -52,6 +57,7 @@ class OpenError(HPKEError):
     Raised when AEAD decryption operations fail, typically due to
     authentication failure or invalid ciphertext.
     """
+
     pass
 
 
@@ -62,6 +68,7 @@ class MessageLimitReachedError(HPKEError):
     Raised when the sequence number exceeds the maximum allowed
     value for the AEAD algorithm.
     """
+
     pass
 
 
@@ -72,6 +79,5 @@ class DeriveKeyPairError(HPKEError):
     Raised when key pair derivation fails, such as when rejection
     sampling exceeds the maximum number of iterations.
     """
+
     pass
-
-

@@ -21,9 +21,9 @@ def I2OSP(n: int, w: int) -> bytes:
     """
     if n < 0:
         raise ValueError("n must be non-negative")
-    if n >= 256 ** w:
+    if n >= 256**w:
         raise ValueError("integer too large")
-    return n.to_bytes(w, byteorder='big')
+    return n.to_bytes(w, byteorder="big")
 
 
 def OS2IP(x: bytes) -> int:
@@ -40,7 +40,7 @@ def OS2IP(x: bytes) -> int:
     int
         Non-negative integer value of x.
     """
-    return int.from_bytes(x, byteorder='big')
+    return int.from_bytes(x, byteorder="big")
 
 
 def xor_bytes(a: bytes, b: bytes) -> bytes:
@@ -83,6 +83,4 @@ def concat(*args: bytes) -> bytes:
     bytes
         Concatenated byte string.
     """
-    return b''.join(args)
-
-
+    return b"".join(args)

@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Union
 
 from .constants import AEADID, HPKEMode
 from .context import ContextRecipient, ContextSender
@@ -74,7 +74,15 @@ class HPKESetup:
         if (not got_psk) and mode in (HPKEMode.MODE_PSK, HPKEMode.MODE_AUTH_PSK):
             raise ValueError("Missing required PSK input")
 
-    def key_schedule(self, role: str, mode: HPKEMode, shared_secret: bytes, info: bytes, psk: bytes, psk_id: bytes) -> Union[ContextSender, ContextRecipient]:
+    def key_schedule(
+        self,
+        role: str,
+        mode: HPKEMode,
+        shared_secret: bytes,
+        info: bytes,
+        psk: bytes,
+        psk_id: bytes,
+    ) -> Union[ContextSender, ContextRecipient]:
         """
         Perform key schedule to derive encryption context.
 
@@ -159,11 +167,11 @@ class HPKESetup:
             "exporter_secret": exporter_secret,
             "suite_id": self.suite_id,
         }
-        if role == 'S':
+        if role == "S":
             return ContextSender(**ctx_args)
         return ContextRecipient(**ctx_args)
 
-    def setup_base_sender(self, pkR, info: bytes) -> Tuple[bytes, ContextSender]:
+    def setup_base_sender(self, pkR, info: bytes) -> tuple[bytes, ContextSender]:
         """
         Setup Base mode for sender.
 
@@ -180,7 +188,7 @@ class HPKESetup:
             Tuple of (encapsulated key, sender context).
         """
         shared_secret, enc = self.kem.encap(pkR)
-        ctx = self.key_schedule('S', HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")
+        ctx = self.key_schedule("S", HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")
         return enc, ctx  # type: ignore[return-value]
 
     def setup_base_recipient(self, enc: bytes, skR, info: bytes) -> ContextRecipient:
@@ -202,9 +210,11 @@ class HPKESetup:
             Recipient context.
         """
         shared_secret = self.kem.decap(enc, skR)
-        return self.key_schedule('R', HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
+        return self.key_schedule("R", HPKEMode.MODE_BASE, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
 
-    def setup_psk_sender(self, pkR, info: bytes, psk: bytes, psk_id: bytes) -> Tuple[bytes, ContextSender]:
+    def setup_psk_sender(
+        self, pkR, info: bytes, psk: bytes, psk_id: bytes
+    ) -> tuple[bytes, ContextSender]:
         """
         Setup PSK mode for sender.
 
@@ -232,10 +242,12 @@ class HPKESetup:
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.encap(pkR)
-        ctx = self.key_schedule('S', HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id)
+        ctx = self.key_schedule("S", HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id)
         return enc, ctx  # type: ignore[return-value]
 
-    def setup_psk_recipient(self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes) -> ContextRecipient:
+    def setup_psk_recipient(
+        self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes
+    ) -> ContextRecipient:
         """
         Setup PSK mode for recipient.
 
@@ -265,9 +277,11 @@ class HPKESetup:
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.decap(enc, skR)
-        return self.key_schedule('R', HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id)  # type: ignore[return-value]
+        return self.key_schedule(
+            "R", HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id
+        )  # type: ignore[return-value]
 
-    def setup_auth_sender(self, pkR, info: bytes, skS) -> Tuple[bytes, ContextSender]:
+    def setup_auth_sender(self, pkR, info: bytes, skS) -> tuple[bytes, ContextSender]:
         """
         Setup Auth mode for sender.
 
@@ -286,7 +300,7 @@ class HPKESetup:
             Tuple of (encapsulated key, sender context).
         """
         shared_secret, enc = self.kem.auth_encap(pkR, skS)
-        ctx = self.key_schedule('S', HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")
+        ctx = self.key_schedule("S", HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")
         return enc, ctx  # type: ignore[return-value]
 
     def setup_auth_recipient(self, enc: bytes, skR, info: bytes, pkS) -> ContextRecipient:
@@ -310,9 +324,11 @@ class HPKESetup:
             Recipient context.
         """
         shared_secret = self.kem.auth_decap(enc, skR, pkS)
-        return self.key_schedule('R', HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
+        return self.key_schedule("R", HPKEMode.MODE_AUTH, shared_secret, info, psk=b"", psk_id=b"")  # type: ignore[return-value]
 
-    def setup_auth_psk_sender(self, pkR, info: bytes, psk: bytes, psk_id: bytes, skS) -> Tuple[bytes, ContextSender]:
+    def setup_auth_psk_sender(
+        self, pkR, info: bytes, psk: bytes, psk_id: bytes, skS
+    ) -> tuple[bytes, ContextSender]:
         """
         Setup AuthPSK mode for sender.
 
@@ -342,10 +358,14 @@ class HPKESetup:
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.auth_encap(pkR, skS)
-        ctx = self.key_schedule('S', HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id)
+        ctx = self.key_schedule(
+            "S", HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id
+        )
         return enc, ctx  # type: ignore[return-value]
 
-    def setup_auth_psk_recipient(self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes, pkS) -> ContextRecipient:
+    def setup_auth_psk_recipient(
+        self, enc: bytes, skR, info: bytes, psk: bytes, psk_id: bytes, pkS
+    ) -> ContextRecipient:
         """
         Setup AuthPSK mode for recipient.
 
@@ -377,6 +397,6 @@ class HPKESetup:
         if len(psk) < 32:
             raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.auth_decap(enc, skR, pkS)
-        return self.key_schedule('R', HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id)  # type: ignore[return-value]
-
-
+        return self.key_schedule(
+            "R", HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id
+        )  # type: ignore[return-value]

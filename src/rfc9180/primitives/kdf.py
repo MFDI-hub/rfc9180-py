@@ -30,7 +30,7 @@ class KDFBase:
 
     def __init__(self, kdf_id: KDFID):
         self.kdf_id = kdf_id
-        self.Nh = KDF_PARAMS[self.kdf_id]['Nh']
+        self.Nh = KDF_PARAMS[self.kdf_id]["Nh"]
         self.hash_algorithm = self._get_hash_algorithm()
         # RFC 9180 §7.2.1 input-length accounting constants.
         self._version_label_len = len(b"HPKE-v1")
@@ -119,7 +119,7 @@ class KDFBase:
             Pseudorandom key (PRK).
         """
         if not salt:
-            salt = b'\x00' * self.Nh
+            salt = b"\x00" * self.Nh
 
         h = HMAC(salt, self.hash_algorithm)
         h.update(ikm)
@@ -148,7 +148,7 @@ class KDFBase:
         ValueError
             If requested length exceeds maximum (255 * Nh).
         """
-        if L > 255 * self.Nh:
+        if 255 * self.Nh < L:
             raise ValueError(f"Requested length {L} exceeds maximum {255 * self.Nh}")
 
         hkdf_expand = HKDFExpand(
@@ -178,12 +178,10 @@ class KDFBase:
         bytes
             Pseudorandom key (PRK).
         """
-        label_bytes = label.encode('ascii')
+        label_bytes = label.encode("ascii")
         max_ikm_len = self._max_labeled_extract_ikm_len(len(label_bytes), len(suite_id))
         if len(ikm) > max_ikm_len:
-            raise ValueError(
-                f"LabeledExtract ikm length {len(ikm)} exceeds maximum {max_ikm_len}"
-            )
+            raise ValueError(f"LabeledExtract ikm length {len(ikm)} exceeds maximum {max_ikm_len}")
 
         labeled_ikm = concat(
             b"HPKE-v1",
@@ -220,7 +218,7 @@ class KDFBase:
         ValueError
             If requested length exceeds maximum (255 * Nh).
         """
-        label_bytes = label.encode('ascii')
+        label_bytes = label.encode("ascii")
         max_info_len = self._max_labeled_expand_info_len(len(label_bytes), len(suite_id))
         if len(info) > max_info_len:
             raise ValueError(
@@ -235,5 +233,3 @@ class KDFBase:
             info,
         )
         return self.expand(prk, labeled_info, L)
-
-

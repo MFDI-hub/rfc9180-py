@@ -16,7 +16,9 @@ def build_env(aead_id: AEADID = AEADID.AES_128_GCM):
     return kem, setup
 
 
-@pytest.mark.parametrize("aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305])
+@pytest.mark.parametrize(
+    "aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305]
+)
 def test_multi_message_roundtrip_base(aead_id):
     kem, setup = build_env(aead_id)
     skR, pkR = kem.generate_key_pair()
@@ -30,7 +32,9 @@ def test_multi_message_roundtrip_base(aead_id):
     assert outs == pts
 
 
-@pytest.mark.parametrize("aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305])
+@pytest.mark.parametrize(
+    "aead_id", [AEADID.AES_128_GCM, AEADID.AES_256_GCM, AEADID.CHACHA20_POLY1305]
+)
 def test_exporter_values_match(aead_id):
     kem, setup = build_env(aead_id)
     skR, pkR = kem.generate_key_pair()
@@ -55,5 +59,3 @@ def test_export_only_flow():
     enc, exported_s = single.send_export_base(pkR, info, exporter_context, L)
     exported_r = single.receive_export_base(enc, skR, info, exporter_context, L)
     assert exported_s == exported_r and len(exported_s) == L
-
-

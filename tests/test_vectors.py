@@ -30,16 +30,16 @@ def test_vector_x25519_aes128gcm_base_decrypt():
     aead = AEADBase(AEADID.AES_128_GCM)
     setup = HPKESetup(kem, kdf, aead)
 
-    skR = kem.deserialize_private_key(bytes.fromhex(vec['skRm']))
-    info = bytes.fromhex(vec['info'])
+    skR = kem.deserialize_private_key(bytes.fromhex(vec["skRm"]))
+    info = bytes.fromhex(vec["info"])
 
-    enc = bytes.fromhex(vec['enc'])
+    enc = bytes.fromhex(vec["enc"])
     ctx_r = setup.setup_base_recipient(enc, skR, info)
 
-    for msg in vec.get('encryptions', []):
-        aad = bytes.fromhex(msg['aad'])
-        ct = bytes.fromhex(msg['ct'])
-        pt_expected = bytes.fromhex(msg['pt'])
+    for msg in vec.get("encryptions", []):
+        aad = bytes.fromhex(msg["aad"])
+        ct = bytes.fromhex(msg["ct"])
+        pt_expected = bytes.fromhex(msg["pt"])
         pt = ctx_r.open(aad, ct)
         assert pt == pt_expected
 
@@ -61,17 +61,15 @@ def test_vector_optional_matrix_base_decrypt(kem_ctor, aead_id, filename):
     aead = AEADBase(aead_id)
     setup = HPKESetup(kem, kdf, aead)
 
-    skR = kem.deserialize_private_key(bytes.fromhex(vec['skRm']))
-    info = bytes.fromhex(vec['info'])
+    skR = kem.deserialize_private_key(bytes.fromhex(vec["skRm"]))
+    info = bytes.fromhex(vec["info"])
 
-    enc = bytes.fromhex(vec['enc'])
+    enc = bytes.fromhex(vec["enc"])
     ctx_r = setup.setup_base_recipient(enc, skR, info)
 
-    for msg in vec.get('encryptions', []):
-        aad = bytes.fromhex(msg['aad'])
-        ct = bytes.fromhex(msg['ct'])
-        pt_expected = bytes.fromhex(msg['pt'])
+    for msg in vec.get("encryptions", []):
+        aad = bytes.fromhex(msg["aad"])
+        ct = bytes.fromhex(msg["ct"])
+        pt_expected = bytes.fromhex(msg["pt"])
         pt = ctx_r.open(aad, ct)
         assert pt == pt_expected
-
-

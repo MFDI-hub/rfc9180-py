@@ -58,5 +58,3 @@ def test_kem_x448_deterministic():
     sk1, pk1 = kem.derive_key_pair(ikm)
     sk2, pk2 = kem.derive_key_pair(ikm)
     assert kem.serialize_public_key(pk1) == kem.serialize_public_key(pk2)
-
-

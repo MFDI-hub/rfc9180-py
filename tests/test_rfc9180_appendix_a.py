@@ -105,7 +105,9 @@ def test_appendix_a_vector(vec):
 
     if vec["encryptions"]:
         for enc_data in vec["encryptions"]:
-            ctx_sender_enc = setup.key_schedule("S", mode, shared_secret, info, psk=psk, psk_id=psk_id)
+            ctx_sender_enc = setup.key_schedule(
+                "S", mode, shared_secret, info, psk=psk, psk_id=psk_id
+            )
             ctx_sender_enc.seq = enc_data["sequence_number"]
             aad = bytes.fromhex(enc_data["aad"])
             pt = bytes.fromhex(enc_data["pt"])
@@ -116,7 +118,9 @@ def test_appendix_a_vector(vec):
             assert ctx_sender_enc.seal(aad, pt) == ct_expected
 
         for enc_data in vec["encryptions"]:
-            ctx_recipient_dec = setup.key_schedule("R", mode, shared_secret, info, psk=psk, psk_id=psk_id)
+            ctx_recipient_dec = setup.key_schedule(
+                "R", mode, shared_secret, info, psk=psk, psk_id=psk_id
+            )
             ctx_recipient_dec.seq = enc_data["sequence_number"]
             aad = bytes.fromhex(enc_data["aad"])
             pt_expected = bytes.fromhex(enc_data["pt"])

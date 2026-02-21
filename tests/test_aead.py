@@ -1,4 +1,3 @@
-
 import secrets
 
 import pytest
@@ -35,5 +34,3 @@ def test_export_only_rejects_seal_open():
         aead.seal(b"", b"", b"", b"")
     with pytest.raises(ValueError):
         aead.open(b"", b"", b"", b"")
-
-

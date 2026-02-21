@@ -10,7 +10,9 @@ def test_header_round_trip():
     pt = b"payload"
 
     enc, ct = hpke.seal_base(pkR, info, aad, pt)
-    msg = append_header(enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), int(HPKEMode.MODE_BASE))
+    msg = append_header(
+        enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), int(HPKEMode.MODE_BASE)
+    )
 
     kem_id2, kdf_id2, aead_id2, mode2, enc2, ct2 = parse_header(msg, enc_len=hpke.kem.Nenc)
     assert kem_id2 == int(hpke.kem_id)
@@ -36,5 +38,3 @@ def test_header_errors():
         raise AssertionError("Expected error for bad magic")
     except ValueError:
         pass
-
-

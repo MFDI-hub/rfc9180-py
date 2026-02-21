@@ -52,11 +52,11 @@ class KEMBase(ABC):
         self.kem_id = kem_id
         self.kdf = self._create_internal_kdf(kem_id)
         params = KEM_PARAMS[kem_id]
-        self.Nsecret = params['Nsecret']
-        self.Nenc = params['Nenc']
-        self.Npk = params['Npk']
-        self.Nsk = params['Nsk']
-        self.Ndh = params['Ndh']
+        self.Nsecret = params["Nsecret"]
+        self.Nenc = params["Nenc"]
+        self.Npk = params["Npk"]
+        self.Nsk = params["Nsk"]
+        self.Ndh = params["Ndh"]
         # KEM suite id (RFC 9180 §4.1)
         self.suite_id = concat(b"KEM", I2OSP(kem_id, 2))
 
@@ -476,10 +476,13 @@ class DHKEM_X25519(KEMBase):
         return sk, pk
 
     def serialize_public_key(self, pk) -> bytes:
-        return cast(bytes, pk.public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw,
-        ))
+        return cast(
+            bytes,
+            pk.public_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PublicFormat.Raw,
+            ),
+        )
 
     def deserialize_public_key(self, pkm: bytes):
         if len(pkm) != self.Npk:
@@ -564,10 +567,13 @@ class DHKEM_X448(KEMBase):
         return sk, pk
 
     def serialize_public_key(self, pk) -> bytes:
-        return cast(bytes, pk.public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw,
-        ))
+        return cast(
+            bytes,
+            pk.public_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PublicFormat.Raw,
+            ),
+        )
 
     def deserialize_public_key(self, pkm: bytes):
         if len(pkm) != self.Npk:
@@ -716,6 +722,7 @@ class DHKEM_P256(DHKEM_NIST):
     Implements DHKEM using the NIST P-256 curve (secp256r1) and
     HKDF-SHA256 for key derivation.
     """
+
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P256_HKDF_SHA256,
@@ -731,6 +738,7 @@ class DHKEM_P384(DHKEM_NIST):
     Implements DHKEM using the NIST P-384 curve (secp384r1) and
     HKDF-SHA384 for key derivation.
     """
+
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P384_HKDF_SHA384,
@@ -746,10 +754,11 @@ class DHKEM_P521(DHKEM_NIST):
     Implements DHKEM using the NIST P-521 curve (secp521r1) and
     HKDF-SHA512 for key derivation.
     """
+
     def __init__(self):
         super().__init__(
             KEMID.DHKEM_P521_HKDF_SHA512,
             ec.SECP521R1(),
             0x01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409,
-            0x01, # mask
+            0x01,  # mask
         )

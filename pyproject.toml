@@ -18,6 +18,9 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
 ]
 
 dependencies = [
@@ -30,6 +33,11 @@ dev = [
     "pytest-cov>=4.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
+]
+docs = [
+    "sphinx>=7.4.0,<9.0.0",
+    "sphinx-autodoc-typehints>=2.3.0",
+    "sphinx-rtd-theme>=3.0.0",
 ]
 
 [project.urls]
@@ -59,8 +67,13 @@ addopts = [
 ]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 line-length = 100
+
+[tool.ruff.format]
+line-ending = "auto"
+indent-style = "space"
+quote-style = "double"
 
 [tool.ruff.lint]
 select = [
@@ -71,6 +84,9 @@ select = [
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
+    "S",   # flake8-bandit (security)
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
@@ -78,25 +94,26 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # unused imports
-"tests/**/*.py" = ["E501"]  # allow longer lines in tests
+"tests/**/*.py" = ["E501", "S101", "S106"]  # allow longer lines, assert, input in tests
 
 [tool.mypy]
 python_version = "3.9"
+# Gradual strict: match pyhpke goals; enable strict = true once types are complete
+strict = false
+disallow_any_unimported = true
+warn_unreachable = true
+ignore_missing_imports = false
 warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+pretty = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
-disallow_untyped_defs = false
 ignore_errors = true
 
 # Note: uv virtual environment naming

@@ -5,7 +5,7 @@ from .primitives.aead import AEADBase
 from .primitives.kdf import KDFBase
 from .utils import I2OSP, xor_bytes
 
-Role = Literal['S', 'R']
+Role = Literal["S", "R"]
 
 
 class Context:
@@ -124,7 +124,7 @@ class Context:
         MessageLimitReachedError
             If sequence number would overflow.
         """
-        if self.role != 'S':
+        if self.role != "S":
             raise ValueError("Only sender context can seal")
         nonce = self.compute_nonce(self.seq)
         ct = self.aead.seal(self.key, nonce, aad, pt)
@@ -156,7 +156,7 @@ class Context:
         MessageLimitReachedError
             If sequence number would overflow.
         """
-        if self.role != 'R':
+        if self.role != "R":
             raise ValueError("Only recipient context can open")
         nonce = self.compute_nonce(self.seq)
         pt = self.aead.open(self.key, nonce, aad, ct)
@@ -184,7 +184,7 @@ class Context:
         ValueError
             If export length exceeds maximum.
         """
-        if L > 255 * self.kdf.Nh:
+        if 255 * self.kdf.Nh < L:
             raise ValueError(f"Export length {L} exceeds maximum {255 * self.kdf.Nh}")
         return self.kdf.labeled_expand(
             prk=self.exporter_secret,
@@ -201,8 +201,9 @@ class ContextSender(Context):
 
     A specialized Context for senders that can only seal (encrypt) messages.
     """
+
     def __init__(self, *args, **kwargs):
-        super().__init__('S', *args, **kwargs)
+        super().__init__("S", *args, **kwargs)
 
 
 class ContextRecipient(Context):
@@ -211,7 +212,6 @@ class ContextRecipient(Context):
 
     A specialized Context for recipients that can only open (decrypt) messages.
     """
+
     def __init__(self, *args, **kwargs):
-        super().__init__('R', *args, **kwargs)
-
-
+        super().__init__("R", *args, **kwargs)

@@ -30,5 +30,3 @@ def test_xor_bytes():
 def test_concat():
     assert concat(b"a", b"b", b"c") == b"abc"
     assert concat() == b""
-
-

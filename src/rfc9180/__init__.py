@@ -319,7 +319,9 @@ class HPKE:
         pkR = self._deserialize_public_key(pkR)
         return self._single_shot.seal_psk(pkR, info, aad, pt, psk, psk_id)
 
-    def open_psk(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes):
+    def open_psk(
+        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes
+    ):
         """
         Open (decrypt) a message using PSK mode.
 
@@ -414,7 +416,9 @@ class HPKE:
         pkS = self._deserialize_public_key(pkS)
         return self._single_shot.open_auth(enc, skR, info, aad, ct, pkS)
 
-    def seal_auth_psk(self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes, skS):
+    def seal_auth_psk(
+        self, pkR, info: bytes, aad: bytes, pt: bytes, psk: bytes, psk_id: bytes, skS
+    ):
         """
         Seal (encrypt) a message using AuthPSK mode.
 
@@ -449,7 +453,9 @@ class HPKE:
         skS = self._deserialize_private_key(skS)
         return self._single_shot.seal_auth_psk(pkR, info, aad, pt, psk, psk_id, skS)
 
-    def open_auth_psk(self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes, pkS):
+    def open_auth_psk(
+        self, enc: bytes, skR, info: bytes, aad: bytes, ct: bytes, psk: bytes, psk_id: bytes, pkS
+    ):
         """
         Open (decrypt) a message using AuthPSK mode.
 
@@ -520,6 +526,7 @@ def create_hpke(
     """
     return HPKE(kem_id, kdf_id, aead_id)
 
+
 __all__ = [
     "KEMID",
     "KDFID",
@@ -529,5 +536,3 @@ __all__ = [
     "append_header",
     "parse_header",
 ]
-
-

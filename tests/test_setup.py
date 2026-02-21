@@ -18,5 +18,3 @@ def test_setup_base_roundtrip():
     pt = b"hello setup"
     ct = sender.seal(aad, pt)
     assert recipient.open(aad, ct) == pt
-
-
