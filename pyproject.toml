@@ -48,7 +48,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/MFDI-hub/rfc9180-py"
-Documentation = "https://github.com/MFDI-hub/rfc9180-py#readme"
+Documentation = "https://mfdi-hub.github.io/rfc9180-py/"
 Repository = "https://github.com/MFDI-hub/rfc9180-py"
 Issues = "https://github.com/MFDI-hub/rfc9180-py/issues"
 
