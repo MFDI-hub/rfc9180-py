@@ -202,10 +202,7 @@ class KEMKey:
 
     @classmethod
     def from_pem(cls, data: Union[bytes, str]) -> KEMKeyInterface:
-        if isinstance(data, str):
-            pem_data = data.encode("utf-8")
-        else:
-            pem_data = data
+        pem_data = data.encode("utf-8") if isinstance(data, str) else data
         pem_text = pem_data.decode("utf-8")
 
         if "BEGIN PUBLIC" in pem_text:

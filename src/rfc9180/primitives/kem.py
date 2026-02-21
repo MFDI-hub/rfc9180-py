@@ -11,8 +11,8 @@ from ..exceptions import (
     EncapError,
     ValidationError,
 )
-from ..utils import I2OSP, OS2IP, concat
 from ..types import KEMPrivateKey, KEMPublicKey
+from ..utils import I2OSP, OS2IP, concat
 from .kdf import KDFBase
 
 
