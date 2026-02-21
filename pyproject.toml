@@ -33,6 +33,11 @@ dev = [
     "pytest-cov>=4.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
+    "hatch>=1.0.0",
+    # docs (so dev can build docs)
+    "sphinx>=7.4.0,<9.0.0",
+    "sphinx-autodoc-typehints>=2.3.0",
+    "sphinx-rtd-theme>=3.0.0",
 ]
 docs = [
     "sphinx>=7.4.0,<9.0.0",
@@ -55,6 +60,19 @@ packages = ["src/rfc9180"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "src/rfc9180/py.typed" = "py.typed"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "sphinx>=7.4.0,<9.0.0",
+    "sphinx-autodoc-typehints>=2.3.0",
+    "sphinx-rtd-theme>=3.0.0",
+]
+[tool.hatch.envs.default.scripts]
+docs = "sphinx-build -b html docs docs/_build/html"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

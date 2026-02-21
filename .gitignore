@@ -12,6 +12,8 @@ __pycache__/
 .env.development
 .env.test
 .env.production
-
+.venv
+dist
 *.md
 reports/
+docs/_build/
