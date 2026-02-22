@@ -49,7 +49,7 @@ jobs:
               run: uv sync --extra dev
 
             - name: Run tests
-              run: uv run python -m pytest tests/ -v
+              run: uv run pytest tests/ -v
 
     checks:
         name: Checks (Ruff, Mypy, Docs)

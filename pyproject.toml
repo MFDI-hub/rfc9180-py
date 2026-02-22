@@ -1,6 +1,6 @@
 [project]
 name = "rfc9180"
-version = "0.2.0"
+version = "0.3.0"
 description = "A Python implementation of Hybrid Public Key Encryption (HPKE) as specified in RFC 9180"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "python-dotenv>=1.0.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "mypy>=1.0.0",

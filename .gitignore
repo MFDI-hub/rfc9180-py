@@ -17,3 +17,9 @@ dist
 *.md
 reports/
 docs/_build/
+.pypirc
+.pypi.env
+*.pypi-token
+build/
+*.egg-info/
+scripts/

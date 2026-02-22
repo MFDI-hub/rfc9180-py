@@ -21,8 +21,16 @@ This library implements the core HPKE specification using Python's `cryptography
 
 ## Installation
 
+With [uv](https://docs.astral.sh/uv/) (recommended):
+
 ```bash
-pip install rfc9180-py
+uv pip install rfc9180
+```
+
+With pip:
+
+```bash
+pip install rfc9180
 ```
 
 The library requires Python 3.9+ and uses the `cryptography` library for all cryptographic primitives.
@@ -425,17 +433,17 @@ HPKEMode.MODE_AUTH_PSK # 0x03
 The library includes comprehensive unit tests and support for RFC 9180 test vectors:
 
 ```bash
-# Install development dependencies
-pip install -e ".[dev]"
+# Install development dependencies (uv)
+uv sync --extra dev
 
 # Run all tests
-pytest tests/
+uv run pytest tests/
 
 # Run specific test suites
-pytest tests/test_kem_x25519.py
-pytest tests/test_kem_p256.py
-pytest tests/test_rfc9180_vectors.py
-pytest tests/test_integration.py
+uv run pytest tests/test_kem_x25519.py
+uv run pytest tests/test_kem_p256.py
+uv run pytest tests/test_rfc9180_vectors.py
+uv run pytest tests/test_integration.py
 ```
 
 ## KEM/KDF Decoupling
@@ -473,6 +481,15 @@ except OpenError:
 - [RFC 9180: Hybrid Public Key Encryption](https://www.rfc-editor.org/rfc/rfc9180.txt)
 - [RFC 5869: HMAC-based Extract-and-Expand Key Derivation Function (HKDF)](https://www.rfc-editor.org/rfc/rfc5869.txt)
 - [RFC 7748: Elliptic Curves for Security](https://www.rfc-editor.org/rfc/rfc7748.txt)
+
+## Versioning
+
+Use **`scripts/update_version.py`** to bump the version. It updates **`pyproject.toml`** and **`src/rfc9180/__init__.py`** (`__version__`); do not edit those version strings manually. Docs read the version from `pyproject.toml`.
+
+```bash
+uv run python scripts/update_version.py 0.2.1
+uv run python scripts/update_version.py 0.3.0 --dry-run
+```
 
 ## License
 

@@ -6,14 +6,28 @@ import os
 import sys
 
 # Add project root and src to path so autodoc can import rfc9180
-sys.path.insert(0, os.path.abspath(".."))
+_root = os.path.abspath("..")
+sys.path.insert(0, _root)
 sys.path.insert(0, os.path.abspath("../src"))
+
+
+def _read_version() -> str:
+    """Read version from pyproject.toml (single source of truth)."""
+    pyproject = os.path.join(_root, "pyproject.toml")
+    if os.path.isfile(pyproject):
+        with open(pyproject, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("version ") or line.startswith("version="):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return "0.0.0"
+
 
 project = "rfc9180"
 copyright = "rfc9180-py Contributors"
 author = "rfc9180-py Contributors"
-release = "0.2.0"
-version = "0.2.0"
+release = _read_version()
+version = ".".join(release.split(".")[:2])  # e.g. 0.2 for 0.2.0
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -31,7 +45,7 @@ except ImportError:
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-# Use Read the Docs theme if installed (pip install ".[docs]"), else default
+# Use Read the Docs theme if installed (e.g. uv sync --extra docs), else default
 try:
     import sphinx_rtd_theme  # noqa: F401
 
