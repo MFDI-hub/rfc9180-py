@@ -20,7 +20,7 @@ class HPKESingleShot:
         HPKE setup instance.
     """
 
-    def __init__(self, setup: HPKESetup):
+    def __init__(self, setup: HPKESetup) -> None:
         self.setup = setup
 
     # Base Mode

@@ -48,7 +48,7 @@ class KEMBase(ABC):
         KEM suite identifier.
     """
 
-    def __init__(self, kem_id: KEMID):
+    def __init__(self, kem_id: KEMID) -> None:
         self.kem_id = kem_id
         self.kdf = self._create_internal_kdf(kem_id)
         params = KEM_PARAMS[kem_id]
@@ -643,7 +643,7 @@ class DHKEM_NIST(KEMBase):
         Curve order for rejection sampling.
     """
 
-    def __init__(self, kem_id: KEMID, curve: ec.EllipticCurve, order: int, mask: int = 0xFF):
+    def __init__(self, kem_id: KEMID, curve: ec.EllipticCurve, order: int, mask: int = 0xFF) -> None:
         super().__init__(kem_id)
         self.curve = curve
         self.order = order
