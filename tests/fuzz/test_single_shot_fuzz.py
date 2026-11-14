@@ -116,9 +116,7 @@ def test_single_shot_auth_psk_roundtrip_fuzz(
     pt=st.binary(min_size=0, max_size=128),
 )
 @settings(max_examples=50)
-def test_single_shot_base_modified_ciphertext_fails(
-    info: bytes, aad: bytes, pt: bytes
-) -> None:
+def test_single_shot_base_modified_ciphertext_fails(info: bytes, aad: bytes, pt: bytes) -> None:
     kem, _, single = build_env()
     skR, pkR = kem.generate_key_pair()
     enc, ct = single.seal_base(pkR, info, aad, pt)
@@ -156,18 +154,15 @@ def test_single_shot_base_modified_aad_fails(
     L=st.integers(min_value=0, max_value=1024),
 )
 @settings(max_examples=50)
-def test_single_shot_export_base_properties(
-    info: bytes, exporter_context: bytes, L: int
-) -> None:
+def test_single_shot_export_base_properties(info: bytes, exporter_context: bytes, L: int) -> None:
     kem, _, single = build_env()
     skR, pkR = kem.generate_key_pair()
     enc, exported_sender = single.send_export_base(pkR, info, exporter_context, L)
     max_L = 255 * KDFBase(KDFID.HKDF_SHA256).Nh
-    if L > max_L:
+    if max_L < L:
         with pytest.raises(ValueError):
             single.receive_export_base(enc, skR, info, exporter_context, L)
         return
     exported_recipient = single.receive_export_base(enc, skR, info, exporter_context, L)
     assert exported_sender == exported_recipient
     assert len(exported_sender) == L
-

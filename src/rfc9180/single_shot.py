@@ -99,7 +99,8 @@ class HPKESingleShot:
         pt : bytes
             Plaintext to encrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -111,7 +112,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         enc, ctx = self.setup.setup_psk_sender(pkR, info, psk, psk_id)
         return enc, ctx.seal(aad, pt)
@@ -142,7 +143,8 @@ class HPKESingleShot:
         ct : bytes
             Ciphertext to decrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -154,7 +156,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         OpenError
             If decryption fails.
         """
@@ -248,7 +250,8 @@ class HPKESingleShot:
         pt : bytes
             Plaintext to encrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         skS : Key Object
@@ -262,7 +265,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         enc, ctx = self.setup.setup_auth_psk_sender(pkR, info, psk, psk_id, skS)
         return enc, ctx.seal(aad, pt)
@@ -294,7 +297,8 @@ class HPKESingleShot:
         ct : bytes
             Ciphertext to decrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         pkS : Key Object
@@ -308,7 +312,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         OpenError
             If decryption fails.
         """
@@ -391,7 +395,8 @@ class HPKESingleShot:
         L : int
             Length of exported secret in bytes.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -403,7 +408,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         enc, ctx = self.setup.setup_psk_sender(pkR, info, psk, psk_id)
         return enc, ctx.export(exporter_context, L)
@@ -434,7 +439,8 @@ class HPKESingleShot:
         L : int
             Length of exported secret in bytes.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -446,7 +452,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         ctx = self.setup.setup_psk_recipient(enc, skR, info, psk, psk_id)
         return ctx.export(exporter_context, L)
@@ -537,7 +543,8 @@ class HPKESingleShot:
         L : int
             Length of exported secret in bytes.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         skS : Key Object
@@ -551,7 +558,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         enc, ctx = self.setup.setup_auth_psk_sender(pkR, info, psk, psk_id, skS)
         return enc, ctx.export(exporter_context, L)
@@ -583,7 +590,8 @@ class HPKESingleShot:
         L : int
             Length of exported secret in bytes.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         pkS : Key Object
@@ -597,7 +605,7 @@ class HPKESingleShot:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         ctx = self.setup.setup_auth_psk_recipient(enc, skR, info, psk, psk_id, pkS)
         return ctx.export(exporter_context, L)

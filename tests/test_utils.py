@@ -1,6 +1,6 @@
 import pytest
 
-from rfc9180.utils import I2OSP, OS2IP, concat, xor_bytes
+from rfc9180.utils import I2OSP, OS2IP, base64url_decode, concat, xor_bytes
 
 
 def test_I2OSP_and_OS2IP_roundtrip():
@@ -30,3 +30,9 @@ def test_xor_bytes():
 def test_concat():
     assert concat(b"a", b"b", b"c") == b"abc"
     assert concat() == b""
+
+
+def test_base64url_decode_rejects_non_alphabet():
+    with pytest.raises(ValueError):
+        base64url_decode("QUJD!!!!REVG")
+    assert base64url_decode("QUJDREVG") == b"ABCDEF"

@@ -55,11 +55,11 @@ Single-shot encryption (Base mode)
 Other single-shot modes
 ------------------------
 
-**PSK mode** (pre-shared key; must have at least 32 bytes of entropy):
+**PSK mode** (pre-shared key; RFC 9180 §9.5 requires at least 32 bytes of entropy, supplied by the caller):
 
 .. code-block:: python
 
-   psk = b"pre-shared-key-with-sufficient-entropy"
+   psk = b"\x01" * 32  # placeholder; use bytes from a CSPRNG
    psk_id = b"psk-identifier"
    enc, ct = hpke.seal_psk(pkR, info, aad, pt, psk, psk_id)
    pt = hpke.open_psk(enc, skR, info, aad, ct, psk, psk_id)

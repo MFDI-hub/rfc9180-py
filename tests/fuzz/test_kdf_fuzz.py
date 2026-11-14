@@ -28,7 +28,7 @@ def test_kdf_extract_expand_properties(
 ) -> None:
     prk = kdf.extract(salt, ikm)
     assert len(prk) == kdf.Nh
-    if L > 255 * kdf.Nh:
+    if 255 * kdf.Nh < L:
         from pytest import raises
 
         with raises(ValueError):
@@ -54,7 +54,7 @@ def test_kdf_labeled_extract_expand_domain_separation(
     ikm = b"input key material"
     prk = kdf.labeled_extract(b"", label, ikm, suite_id)
     assert len(prk) == kdf.Nh
-    if L > 255 * kdf.Nh:
+    if 255 * kdf.Nh < L:
         from pytest import raises
 
         with raises(ValueError):
@@ -62,4 +62,3 @@ def test_kdf_labeled_extract_expand_domain_separation(
         return
     okm = kdf.labeled_expand(prk, "sec", info, L, suite_id)
     assert len(okm) == L
-

@@ -57,4 +57,3 @@ def test_base64url_decode_lenient(data: bytes) -> None:
     encoded = base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
     decoded = base64url_decode(encoded)
     assert decoded == data
-

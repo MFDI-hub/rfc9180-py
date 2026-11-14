@@ -12,7 +12,7 @@ Install from PyPI
 
 .. code-block:: bash
 
-   pip install rfc9180-py
+   pip install rfc9180
 
 Install from source
 -------------------

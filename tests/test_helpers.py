@@ -24,6 +24,38 @@ def test_header_round_trip():
     assert out == pt
 
 
+def test_header_rejects_enc_len_that_disagrees_with_kem_id():
+    hpke = HPKE(KEMID.DHKEM_X25519_HKDF_SHA256, KDFID.HKDF_SHA256, AEADID.AES_128_GCM)
+    enc = b"\x02" * hpke.kem.Nenc
+    ct = b"\x03" * hpke.aead.Nt
+    msg = append_header(
+        enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), int(HPKEMode.MODE_BASE)
+    )
+    try:
+        parse_header(msg, enc_len=hpke.kem.Nenc - 1)
+        raise AssertionError("Expected enc_len mismatch to fail")
+    except ValueError:
+        pass
+
+
+def test_header_rejects_ciphertext_shorter_than_tag():
+    hpke = HPKE(KEMID.DHKEM_X25519_HKDF_SHA256, KDFID.HKDF_SHA256, AEADID.AES_128_GCM)
+    enc = b"\x02" * hpke.kem.Nenc
+    msg = append_header(
+        enc,
+        b"\x03" * (hpke.aead.Nt - 1),
+        int(hpke.kem_id),
+        int(hpke.kdf_id),
+        int(hpke.aead_id),
+        int(HPKEMode.MODE_BASE),
+    )
+    try:
+        parse_header(msg, enc_len=hpke.kem.Nenc)
+        raise AssertionError("Expected short ciphertext to fail")
+    except ValueError:
+        pass
+
+
 def test_header_errors():
     # Too short
     try:

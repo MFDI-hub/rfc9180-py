@@ -1,7 +1,7 @@
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from rfc9180.constants import AEADID, AEAD_PARAMS, KDFID, KDF_PARAMS, KEMID, KEM_PARAMS
+from rfc9180.constants import AEAD_PARAMS, AEADID, KDF_PARAMS, KDFID, KEM_PARAMS, KEMID
 from rfc9180.exceptions import (
     DecapError,
     DeriveKeyPairError,
@@ -71,4 +71,3 @@ def test_exceptions_inherit_from_hpkeerror() -> None:
     assert issubclass(OpenError, HPKEError)
     assert issubclass(MessageLimitReachedError, HPKEError)
     assert issubclass(DeriveKeyPairError, HPKEError)
-

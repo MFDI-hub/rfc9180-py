@@ -99,7 +99,7 @@ class HPKESetup:
 
     def key_schedule(
         self,
-        role: Literal["S", "R"],
+        role: str,
         mode: HPKEMode,
         shared_secret: bytes,
         info: bytes,
@@ -132,8 +132,11 @@ class HPKESetup:
         Raises
         ------
         ValueError
-            If PSK inputs are inconsistent with the mode.
+            If ``role`` is not ``"S"`` or ``"R"``, or if PSK inputs are
+            inconsistent with the mode.
         """
+        if role not in ("S", "R"):
+            raise ValueError("role must be 'S' or 'R'")
         self.verify_psk_inputs(mode, psk, psk_id)
         psk_id_hash = self.kdf.labeled_extract(
             salt=b"",
@@ -254,7 +257,9 @@ class HPKESetup:
         info : bytes
             Application-supplied information.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy.
+            Entropy is not measurable from the byte string; only VerifyPSKInputs
+            is enforced.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -266,10 +271,8 @@ class HPKESetup:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with PSK mode.
         """
-        if len(psk) < 32:
-            raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.encap(pkR)
         ctx = self.key_schedule("S", HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id)
         return enc, ctx
@@ -289,7 +292,9 @@ class HPKESetup:
         info : bytes
             Application-supplied information.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy.
+            Entropy is not measurable from the byte string; only VerifyPSKInputs
+            is enforced.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -301,10 +306,8 @@ class HPKESetup:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with PSK mode.
         """
-        if len(psk) < 32:
-            raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.decap(enc, skR)
         return self.key_schedule(
             "R", HPKEMode.MODE_PSK, shared_secret, info, psk=psk, psk_id=psk_id
@@ -372,7 +375,9 @@ class HPKESetup:
         info : bytes
             Application-supplied information.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy.
+            Entropy is not measurable from the byte string; only VerifyPSKInputs
+            is enforced.
         psk_id : bytes
             Pre-shared key identifier.
         skS : Key Object
@@ -386,10 +391,8 @@ class HPKESetup:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with AuthPSK mode.
         """
-        if len(psk) < 32:
-            raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret, enc = self.kem.auth_encap(pkR, skS)
         ctx = self.key_schedule(
             "S", HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id
@@ -417,7 +420,9 @@ class HPKESetup:
         info : bytes
             Application-supplied information.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy.
+            Entropy is not measurable from the byte string; only VerifyPSKInputs
+            is enforced.
         psk_id : bytes
             Pre-shared key identifier.
         pkS : Key Object
@@ -431,10 +436,8 @@ class HPKESetup:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with AuthPSK mode.
         """
-        if len(psk) < 32:
-            raise ValueError("PSK must have at least 32 bytes of entropy")
         shared_secret = self.kem.auth_decap(enc, skR, pkS)
         return self.key_schedule(
             "R", HPKEMode.MODE_AUTH_PSK, shared_secret, info, psk=psk, psk_id=psk_id

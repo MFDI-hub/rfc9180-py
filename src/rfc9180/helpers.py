@@ -1,3 +1,4 @@
+from .constants import AEAD_PARAMS, AEADID, KEM_PARAMS, KEMID
 from .utils import I2OSP, concat
 
 
@@ -48,7 +49,7 @@ def parse_header(msg: bytes, enc_len: int) -> tuple[int, int, int, int, bytes, b
     msg : bytes
         Complete HPKE message with header.
     enc_len : int
-        Length of the encapsulated public key (Nenc) for the specific KEM.
+        Length of the encapsulated public key. Must equal ``Nenc`` for ``kem_id``.
 
     Returns
     -------
@@ -58,7 +59,8 @@ def parse_header(msg: bytes, enc_len: int) -> tuple[int, int, int, int, bytes, b
     Raises
     ------
     ValueError
-        If message is too short or has invalid magic bytes.
+        If the message is too short, the magic bytes are wrong, ``enc_len`` does
+        not match ``kem_id``, or the ciphertext is shorter than the AEAD tag.
     """
     if len(msg) < 4 + 2 + 2 + 2 + 1:
         raise ValueError("Message too short for header")
@@ -77,10 +79,24 @@ def parse_header(msg: bytes, enc_len: int) -> tuple[int, int, int, int, bytes, b
     mode = int.from_bytes(msg[offset : offset + 1], "big")
     offset += 1
 
+    try:
+        expected_enc = KEM_PARAMS[KEMID(kem_id)]["Nenc"]
+    except (ValueError, KeyError) as exc:
+        raise ValueError(f"Unknown KEM id: {kem_id}") from exc
+    if enc_len != expected_enc:
+        raise ValueError(f"enc_len {enc_len} does not match kem_id {kem_id} (Nenc={expected_enc})")
+
     if len(msg) < offset + enc_len:
         raise ValueError("Message too short for enc")
 
     enc = msg[offset : offset + enc_len]
     ct = msg[offset + enc_len :]
+
+    try:
+        tag_len = AEAD_PARAMS[AEADID(aead_id)]["Nt"]
+    except (ValueError, KeyError) as exc:
+        raise ValueError(f"Unknown AEAD id: {aead_id}") from exc
+    if len(ct) < tag_len:
+        raise ValueError(f"Ciphertext shorter than Nt ({tag_len})")
 
     return kem_id, kdf_id, aead_id, mode, enc, ct

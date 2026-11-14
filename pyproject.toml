@@ -35,6 +35,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "hypothesis>=6.0.0",
     "mypy>=1.0.0",
+    "ruff>=0.6",
     "hatch>=1.0.0",
     # docs (so dev can build docs)
     "sphinx>=7.4.0,<9.0.0",
@@ -59,9 +60,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rfc9180"]
-
-[tool.hatch.build.targets.wheel.shared-data]
-"src/rfc9180/py.typed" = "py.typed"
 
 [tool.hatch.envs.default]
 dependencies = [

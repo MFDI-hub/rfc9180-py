@@ -1,3 +1,4 @@
+import threading
 from typing import Literal
 
 from .exceptions import MessageLimitReachedError
@@ -50,6 +51,12 @@ class Context:
         HPKE suite identifier.
     seq : int
         Current sequence number.
+
+    ``seal`` and ``open`` hold a lock around nonce allocation, so concurrent
+    calls on one context cannot reuse a nonce. Check the message limit before
+    invoking the AEAD: a rejected call does not encrypt and does not advance
+    ``seq``. AES-GCM stops at 2^32 messages (NIST SP 800-38D). ChaCha20-Poly1305
+    stops at nonce exhaustion. Python ``bytes`` are not zeroized on deletion.
     """
 
     def __init__(
@@ -70,6 +77,7 @@ class Context:
         self.exporter_secret = exporter_secret
         self.suite_id = suite_id
         self.seq = 0
+        self._seq_lock = threading.Lock()
 
     def compute_nonce(self, seq: int) -> bytes:
         """
@@ -97,9 +105,10 @@ class Context:
         MessageLimitReachedError
             If sequence number would overflow.
         """
-        if self.seq >= self.aead.max_seq:
-            raise MessageLimitReachedError("Sequence number overflow")
-        self.seq += 1
+        with self._seq_lock:
+            if self.seq >= self.aead.max_seq:
+                raise MessageLimitReachedError("Sequence number overflow")
+            self.seq += 1
 
     def seal(self, aad: bytes, pt: bytes) -> bytes:
         """
@@ -126,10 +135,13 @@ class Context:
         """
         if self.role != "S":
             raise ValueError("Only sender context can seal")
-        nonce = self.compute_nonce(self.seq)
-        ct = self.aead.seal(self.key, nonce, aad, pt)
-        self.increment_seq()
-        return ct
+        with self._seq_lock:
+            if self.aead.Nn > 0 and self.seq >= self.aead.max_seq:
+                raise MessageLimitReachedError("Sequence number overflow")
+            nonce = self.compute_nonce(self.seq)
+            ct = self.aead.seal(self.key, nonce, aad, pt)
+            self.seq += 1
+            return ct
 
     def open(self, aad: bytes, ct: bytes) -> bytes:
         """
@@ -158,10 +170,13 @@ class Context:
         """
         if self.role != "R":
             raise ValueError("Only recipient context can open")
-        nonce = self.compute_nonce(self.seq)
-        pt = self.aead.open(self.key, nonce, aad, ct)
-        self.increment_seq()
-        return pt
+        with self._seq_lock:
+            if self.aead.Nn > 0 and self.seq >= self.aead.max_seq:
+                raise MessageLimitReachedError("Sequence number overflow")
+            nonce = self.compute_nonce(self.seq)
+            pt = self.aead.open(self.key, nonce, aad, ct)
+            self.seq += 1
+            return pt
 
     def export(self, exporter_context: bytes, L: int) -> bytes:
         """

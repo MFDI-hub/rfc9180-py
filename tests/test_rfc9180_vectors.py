@@ -15,14 +15,19 @@ from rfc9180.constants import HPKEMode
 from rfc9180.setup import HPKESetup
 from tests.vector_helpers import get_aead, get_kdf, get_kem_class, get_mode
 
+_CACHED_VECTORS = None
+
 
 def load_test_vectors():
-    """Load test vectors from test_vectos.json"""
-    vector_path = os.path.join(os.path.dirname(__file__), "test_vectos.json")
-    if not os.path.exists(vector_path):
-        pytest.skip(f"Test vector file not found: {vector_path}")
-    with open(vector_path, encoding="utf-8") as f:
-        return json.load(f)
+    """Load the official CFRG test vectors once."""
+    global _CACHED_VECTORS
+    if _CACHED_VECTORS is None:
+        vector_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "test-vectors.json")
+        if not os.path.exists(vector_path):
+            pytest.skip(f"Test vector file not found: {vector_path}")
+        with open(vector_path, encoding="utf-8") as f:
+            _CACHED_VECTORS = json.load(f)
+    return _CACHED_VECTORS
 
 
 @pytest.fixture(scope="module")

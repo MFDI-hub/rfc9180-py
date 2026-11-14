@@ -9,6 +9,7 @@ from ..exceptions import (
     DeriveKeyPairError,
     DeserializeError,
     EncapError,
+    HPKEError,
     ValidationError,
 )
 from ..types import KEMPrivateKey, KEMPublicKey
@@ -303,6 +304,8 @@ class KEMBase(ABC):
             kem_context = concat(enc, pkRm)
             return self.extract_and_expand(dh_value, kem_context), enc
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError, ValueError)):
+                raise
             raise EncapError(f"Encapsulation failed: {e}") from e
 
     def decap(self, enc: bytes, skR: KEMPrivateKey) -> bytes:
@@ -334,6 +337,8 @@ class KEMBase(ABC):
             kem_context = concat(enc, pkRm)
             return self.extract_and_expand(dh_value, kem_context)
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError, ValueError)):
+                raise
             raise DecapError(f"Decapsulation failed: {e}") from e
 
     def auth_encap(self, pkR: KEMPublicKey, skS: KEMPrivateKey) -> tuple[bytes, bytes]:
@@ -367,6 +372,8 @@ class KEMBase(ABC):
             kem_context = concat(enc, pkRm, pkSm)
             return self.extract_and_expand(dh_value, kem_context), enc
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError, ValueError)):
+                raise
             raise EncapError(f"Authenticated encapsulation failed: {e}") from e
 
     def auth_decap(self, enc: bytes, skR: KEMPrivateKey, pkS: KEMPublicKey) -> bytes:
@@ -401,6 +408,8 @@ class KEMBase(ABC):
             kem_context = concat(enc, pkRm, pkSm)
             return self.extract_and_expand(dh_value, kem_context)
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError, ValueError)):
+                raise
             raise DecapError(f"Authenticated decapsulation failed: {e}") from e
 
 
@@ -414,9 +423,6 @@ class DHKEM_X25519(KEMBase):
 
     def __init__(self) -> None:
         super().__init__(KEMID.DHKEM_X25519_HKDF_SHA256)
-        # Keep track of raw (unclamped) private bytes for derived keys so that
-        # SerializePrivateKey matches RFC vectors.
-        self._raw_private_bytes: dict[int, bytes] = {}
 
     def generate_key_pair(self) -> tuple[x25519.X25519PrivateKey, x25519.X25519PublicKey]:
         """
@@ -466,12 +472,9 @@ class DHKEM_X25519(KEMBase):
             L=self.Nsk,
             suite_id=self.suite_id,
         )
-        # Do not pre-clamp; underlying X25519 operations apply clamping
-        # as required during scalar multiplication. Returning the raw
-        # derived secret preserves vector parity for SerializePrivateKey.
+        # Do not pre-clamp. cryptography stores these bytes as-is and
+        # private_bytes_raw() returns them, which matches SerializePrivateKey.
         sk = x25519.X25519PrivateKey.from_private_bytes(sk_bytes)
-        # Stash raw bytes for later serialization to match vectors
-        self._raw_private_bytes[id(sk)] = sk_bytes
         pk = sk.public_key()
         return sk, pk
 
@@ -488,27 +491,23 @@ class DHKEM_X25519(KEMBase):
             raise DeserializeError(f"Invalid public key length: {len(pkm)}")
         try:
             return x25519.X25519PublicKey.from_public_bytes(pkm)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Public key deserialization failed: {e}") from e
 
     def serialize_private_key(self, sk: KEMPrivateKey) -> bytes:
         if not isinstance(sk, x25519.X25519PrivateKey):
             raise TypeError("Expected X25519 private key")
-        # Prefer raw derived bytes when available to match RFC vectors
-        raw = self._raw_private_bytes.get(id(sk))
-        if raw is not None:
-            return raw
-        return sk.private_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PrivateFormat.Raw,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
+        return sk.private_bytes_raw()
 
     def deserialize_private_key(self, skm: bytes) -> x25519.X25519PrivateKey:
         if len(skm) != self.Nsk:
             raise DeserializeError(f"Invalid private key length: {len(skm)}")
         try:
             return x25519.X25519PrivateKey.from_private_bytes(skm)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Private key deserialization failed: {e}") from e
 
@@ -519,11 +518,13 @@ class DHKEM_X25519(KEMBase):
             raise TypeError("Expected X25519 key pair")
         try:
             shared = sk.exchange(pk)
-            if shared == b"\x00" * 32:
-                raise ValidationError("DH output is all-zero")
-            return shared
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError)):
+                raise
             raise ValidationError(f"DH operation failed: {e}") from e
+        if shared == b"\x00" * 32:
+            raise ValidationError("DH output is all-zero")
+        return shared
 
     def _get_public_key(self, sk: KEMPrivateKey) -> x25519.X25519PublicKey:
         if not isinstance(sk, x25519.X25519PrivateKey):
@@ -541,7 +542,6 @@ class DHKEM_X448(KEMBase):
 
     def __init__(self) -> None:
         super().__init__(KEMID.DHKEM_X448_HKDF_SHA512)
-        self._raw_private_bytes: dict[int, bytes] = {}
 
     def generate_key_pair(self) -> tuple[x448.X448PrivateKey, x448.X448PublicKey]:
         sk = x448.X448PrivateKey.generate()
@@ -565,11 +565,8 @@ class DHKEM_X448(KEMBase):
             L=self.Nsk,
             suite_id=self.suite_id,
         )
-        # Do not pre-clamp for X448 either; rely on implementation to
-        # enforce clamping during multiplication so that serialized
-        # secret matches vectors.
+        # Do not pre-clamp. private_bytes_raw() returns these bytes unchanged.
         sk = x448.X448PrivateKey.from_private_bytes(sk_bytes)
-        self._raw_private_bytes[id(sk)] = sk_bytes
         pk = sk.public_key()
         return sk, pk
 
@@ -586,26 +583,23 @@ class DHKEM_X448(KEMBase):
             raise DeserializeError(f"Invalid public key length: {len(pkm)}")
         try:
             return x448.X448PublicKey.from_public_bytes(pkm)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Public key deserialization failed: {e}") from e
 
     def serialize_private_key(self, sk: KEMPrivateKey) -> bytes:
         if not isinstance(sk, x448.X448PrivateKey):
             raise TypeError("Expected X448 private key")
-        raw = self._raw_private_bytes.get(id(sk))
-        if raw is not None:
-            return raw
-        return sk.private_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PrivateFormat.Raw,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
+        return sk.private_bytes_raw()
 
     def deserialize_private_key(self, skm: bytes) -> x448.X448PrivateKey:
         if len(skm) != self.Nsk:
             raise DeserializeError(f"Invalid private key length: {len(skm)}")
         try:
             return x448.X448PrivateKey.from_private_bytes(skm)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Private key deserialization failed: {e}") from e
 
@@ -614,11 +608,13 @@ class DHKEM_X448(KEMBase):
             raise TypeError("Expected X448 key pair")
         try:
             shared = sk.exchange(pk)
-            if shared == b"\x00" * 56:
-                raise ValidationError("DH output is all-zero")
-            return shared
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError)):
+                raise
             raise ValidationError(f"DH operation failed: {e}") from e
+        if shared == b"\x00" * 56:
+            raise ValidationError("DH output is all-zero")
+        return shared
 
     def _get_public_key(self, sk: KEMPrivateKey) -> x448.X448PublicKey:
         if not isinstance(sk, x448.X448PrivateKey):
@@ -643,7 +639,9 @@ class DHKEM_NIST(KEMBase):
         Curve order for rejection sampling.
     """
 
-    def __init__(self, kem_id: KEMID, curve: ec.EllipticCurve, order: int, mask: int = 0xFF) -> None:
+    def __init__(
+        self, kem_id: KEMID, curve: ec.EllipticCurve, order: int, mask: int = 0xFF
+    ) -> None:
         super().__init__(kem_id)
         self.curve = curve
         self.order = order
@@ -703,6 +701,8 @@ class DHKEM_NIST(KEMBase):
             raise DeserializeError(f"Invalid public key length: {len(pkm)}")
         try:
             return ec.EllipticCurvePublicKey.from_encoded_point(self.curve, pkm)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Public key deserialization failed: {e}") from e
 
@@ -720,6 +720,8 @@ class DHKEM_NIST(KEMBase):
             raise DeserializeError("Private key scalar out of range")
         try:
             return ec.derive_private_key(scalar, self.curve)
+        except TypeError:
+            raise
         except Exception as e:
             raise DeserializeError(f"Private key deserialization failed: {e}") from e
 
@@ -731,6 +733,8 @@ class DHKEM_NIST(KEMBase):
         try:
             return sk.exchange(ec.ECDH(), pk)
         except Exception as e:
+            if isinstance(e, (HPKEError, TypeError)):
+                raise
             raise ValidationError(f"DH operation failed: {e}") from e
 
     def _get_public_key(self, sk: KEMPrivateKey) -> ec.EllipticCurvePublicKey:

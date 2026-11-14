@@ -96,8 +96,10 @@ class ECKey(KEMKeyInterface):
 
     def to_public_bytes(self) -> bytes:
         key = self.raw
+        if isinstance(key, EllipticCurvePrivateKey):
+            key = key.public_key()
         if not isinstance(key, EllipticCurvePublicKey):
-            raise ValueError("The key is private")
+            raise TypeError("Unsupported EC key")
         return key.public_bytes(
             encoding=Encoding.X962,
             format=PublicFormat.UncompressedPoint,
@@ -134,8 +136,10 @@ class X25519Key(KEMKeyInterface):
 
     def to_public_bytes(self) -> bytes:
         key = self.raw
+        if isinstance(key, X25519PrivateKey):
+            key = key.public_key()
         if not isinstance(key, X25519PublicKey):
-            raise ValueError("The key is private")
+            raise TypeError("Unsupported X25519 key")
         return key.public_bytes_raw()
 
 
@@ -169,8 +173,10 @@ class X448Key(KEMKeyInterface):
 
     def to_public_bytes(self) -> bytes:
         key = self.raw
+        if isinstance(key, X448PrivateKey):
+            key = key.public_key()
         if not isinstance(key, X448PublicKey):
-            raise ValueError("The key is private")
+            raise TypeError("Unsupported X448 key")
         return key.public_bytes_raw()
 
 
@@ -205,10 +211,15 @@ class KEMKey:
         pem_data = data.encode("utf-8") if isinstance(data, str) else data
         pem_text = pem_data.decode("utf-8")
 
+        if "ENCRYPTED" in pem_text:
+            raise ValueError("Encrypted PEM private keys are not supported")
         if "BEGIN PUBLIC" in pem_text:
             public_key_obj = load_pem_public_key(pem_data)
             return cls.from_pyca_cryptography_key(cast(RawKEMKey, public_key_obj))
         if "BEGIN PRIVATE" in pem_text or "BEGIN EC PRIVATE" in pem_text:
-            private_key_obj = load_pem_private_key(pem_data, password=None)
+            try:
+                private_key_obj = load_pem_private_key(pem_data, password=None)
+            except TypeError as exc:
+                raise ValueError("Encrypted PEM private keys are not supported") from exc
             return cls.from_pyca_cryptography_key(cast(RawKEMKey, private_key_obj))
         raise ValueError("Failed to decode PEM")

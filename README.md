@@ -144,7 +144,7 @@ secret = ctx_sender.export(b"exporter-context", 32)
 
 #### Section 9: Security Considerations
 - ✅ **Domain Separation**: Proper suite ID construction and labeled operations
-- ✅ **PSK Recommendations**: Enforced minimum entropy requirements
+- ✅ **PSK Recommendations**: `VerifyPSKInputs` consistency checks. Callers must supply at least 32 bytes of entropy (RFC 9180 §9.5); entropy is not measured from the byte string
 - ✅ **Nonce Management**: Automatic sequence number handling with overflow protection
 - ✅ **Key Reuse**: Proper ephemeral key generation per message
 
@@ -192,7 +192,7 @@ Note: These are intentional non-goals per RFC 9180 and should be handled at the 
 
 ### Package Structure
 
-The package is installed as `rfc9180-py` but imported as `hpke`:
+Install with `pip install rfc9180` and import the `rfc9180` package:
 
 ```python
 from rfc9180 import HPKE, KEMID, KDFID, AEADID, create_hpke, append_header, parse_header
@@ -274,7 +274,7 @@ enc, ct = hpke.seal_base(pkR, info, aad, pt)
 pt = hpke.open_base(enc, skR, info, aad, ct)
 
 # PSK mode
-psk = b"pre-shared-key"  # Must have at least 32 bytes of entropy
+psk = b"\x01" * 32  # placeholder; use >= 32 bytes from a CSPRNG (RFC 9180 §9.5)
 psk_id = b"psk-identifier"
 enc, ct = hpke.seal_psk(pkR, info, aad, pt, psk, psk_id)
 pt = hpke.open_psk(enc, skR, info, aad, ct, psk, psk_id)
@@ -452,12 +452,14 @@ Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation d
 
 ## Security Considerations
 
-- **PSK Entropy**: PSKs must have at least 32 bytes of entropy (enforced)
-- **Key Reuse**: Ephemeral keys are generated fresh for each encryption
-- **Nonce Management**: Sequence numbers are automatically managed with overflow protection
-- **Validation**: All inputs are validated per RFC 9180 requirements
-- **Key Serialization**: Keys can be serialized/deserialized for storage and transmission
-- **Context Limits**: Sequence numbers are bounded to prevent nonce reuse
+- **PSK entropy**: RFC 9180 §9.5 requires at least 32 bytes of entropy. The library enforces `VerifyPSKInputs` only (a PSK and its identifier are both present or both absent, and they match the mode). `b"\x00" * 32` is accepted. Length is not entropy.
+- **Key reuse**: Ephemeral keys are generated fresh for each encryption
+- **Nonce management**: `Context.seal` and `Context.open` take a lock around the sequence counter, so concurrent calls on one context cannot reuse a nonce. The limit is checked before the AEAD runs; a rejected call does not return ciphertext and does not advance the counter.
+- **AEAD usage limits**: AES-GCM contexts stop at 2^32 messages per key (NIST SP 800-38D). ChaCha20-Poly1305 contexts stop at nonce exhaustion (2^96 - 1). RFC 9180 §5.2 only requires the nonce-space check; the AES-GCM cap is stricter.
+- **Validation**: KEM deserialization and validation errors keep their RFC 9180 §8 types (`DeserializeError`, `ValidationError`) instead of being rewritten as `EncapError` or `DecapError`.
+- **Key serialization**: X25519 and X448 private keys are serialized with `private_bytes_raw()`. There is no process-wide cache of secret bytes.
+- **Secret lifetime**: Python `bytes` are immutable and are not zeroized when a key object is deleted.
+- **Contexts**: One context is one ordered stream. The lock prevents nonce reuse; it does not make seal and open independent sequences.
 
 ## Error Handling
 

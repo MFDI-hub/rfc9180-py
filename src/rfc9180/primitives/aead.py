@@ -1,10 +1,11 @@
 from collections.abc import Callable
 from typing import Union
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 from ..constants import AEAD_PARAMS, AEADID
-from ..exceptions import MessageLimitReachedError, OpenError
+from ..exceptions import OpenError
 
 
 class AEADBase:
@@ -32,7 +33,9 @@ class AEADBase:
     cipher : callable or None
         Cipher factory function.
     max_seq : int
-        Maximum sequence number before overflow.
+        First sequence number that ``Context`` must reject.
+        AES-GCM uses 2^32 (NIST SP 800-38D: at most 2^32 encryptions per key).
+        Other AEADs use the nonce-space limit from RFC 9180 §5.2.
     """
 
     def __init__(self, aead_id: AEADID) -> None:
@@ -42,7 +45,12 @@ class AEADBase:
         self.Nn = params["Nn"]
         self.Nt = params["Nt"]
         self.cipher = self._get_cipher()
-        self.max_seq = (1 << (8 * self.Nn)) - 1 if self.Nn > 0 else 0
+        nonce_space = (1 << (8 * self.Nn)) - 1 if self.Nn > 0 else 0
+        if aead_id in (AEADID.AES_128_GCM, AEADID.AES_256_GCM):
+            # NIST SP 800-38D §8.3: do not exceed 2^32 invocations of one key.
+            self.max_seq = min(nonce_space, 1 << 32)
+        else:
+            self.max_seq = nonce_space
 
     def _get_cipher(self) -> Union[Callable[[bytes], Union[AESGCM, ChaCha20Poly1305]], None]:
         """
@@ -92,8 +100,6 @@ class AEADBase:
         ------
         ValueError
             If AEAD is EXPORT_ONLY, or if key/nonce lengths are invalid.
-        MessageLimitReachedError
-            If nonce reuse or limits exceeded.
         """
         if self.aead_id == AEADID.EXPORT_ONLY:
             raise ValueError("EXPORT_ONLY AEAD cannot seal messages")
@@ -103,11 +109,7 @@ class AEADBase:
             raise ValueError(f"Invalid nonce length: {len(nonce)}")
         if self.cipher is None:
             raise ValueError("Cipher not configured")
-        try:
-            return self.cipher(key).encrypt(nonce, pt, aad)
-        except Exception as e:
-            # Commonly thrown when nonce reuse or limits exceeded
-            raise MessageLimitReachedError(f"Seal failed: {e}") from e
+        return self.cipher(key).encrypt(nonce, pt, aad)
 
     def open(self, key: bytes, nonce: bytes, aad: bytes, ct: bytes) -> bytes:
         """
@@ -146,5 +148,8 @@ class AEADBase:
             raise ValueError("Cipher not configured")
         try:
             return self.cipher(key).decrypt(nonce, ct, aad)
-        except Exception as e:
+        except InvalidTag as e:
+            raise OpenError(f"Decryption failed: {e}") from e
+        except ValueError as e:
+            # Ciphertext shorter than the tag, or otherwise rejected by the AEAD.
             raise OpenError(f"Decryption failed: {e}") from e

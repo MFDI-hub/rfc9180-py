@@ -1,0 +1,95 @@
+[
+  {
+    "name": "X448 + HKDF-SHA512 + ChaCha20-Poly1305, base",
+    "kem": "DHKEM_X448",
+    "kdf": "HKDF_SHA512",
+    "aead": "CHACHA20_POLY1305",
+    "mode": "BASE",
+    "ikmR": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637",
+    "ikmE": "0104070a0d101316191c1f2225282b2e3134373a3d404346494c4f5255585b5e6164676a6d707376797c7f8285888b8e9194979a9da0a3a6",
+    "info": "696e666f",
+    "psk": "",
+    "psk_id": "",
+    "skRm": "078fefdceca75e2ea9bc41c8f3a8884a6176041177108e9edd594504826d2db633b080d5fb09375cc6fcaf2c505681358d4ae4a8ef64c125",
+    "pkRm": "dca45842f10ec923d04b606190f94df11cfb763d055d295b142eee07f090caeef57a80798d605ff708d9c30febb89b4931b5ee114ab18ab8",
+    "enc": "e72e204e65435986aaa85defab1e184c926fa9905ec48668b849a3069011d584ac656ccf597122334012566ad2893e6057d28a5c749d9a19",
+    "shared_secret": "d508e35538d16fdc61caa0358b3fc13f9a86eb14594d2380aca29612eafba285342059832b0847d22e340b778562fb92aa63272c9e3d3cfaa2a1900417c64614",
+    "key": "364ed17ef0499690d4f0596e3e60783d2114c46a70227eba5033a31249531c54",
+    "base_nonce": "4ae252a1f79466fa4dd8594b",
+    "exporter_secret": "fe169413178a54de92e9259b8c1552f60e384eeae93e1c620ec86869803902e5938e745da0cb2c27e18a8cdd4f8d1abc7b1a0a199ef7cf1ef9eb992b85309f77",
+    "encryptions": [
+      {
+        "aad": "616164",
+        "pt": "706c61696e74657874",
+        "ct": "d9f6139d71b20706c5932b3f5283900d825b6bca8407b0cfb2"
+      },
+      {
+        "aad": "6161642d32",
+        "pt": "7365636f6e64",
+        "ct": "d92476848c83eac7491151b4ddbf673cc2e790dfb487"
+      }
+    ],
+    "export": "760ab209df70e12b5fcd6b1e17d6e361d09c81b4fa3d7592348bc5b4ecfc9c15"
+  },
+  {
+    "name": "X25519 + HKDF-SHA384 + AES-128-GCM, base",
+    "kem": "DHKEM_X25519",
+    "kdf": "HKDF_SHA384",
+    "aead": "AES_128_GCM",
+    "mode": "BASE",
+    "ikmR": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "ikmE": "0910171e252c333a41484f565d646b727980878e959ca3aab1b8bfc6cdd4dbe2",
+    "info": "696e666f",
+    "psk": "",
+    "psk_id": "",
+    "skRm": "91f7a467df4ef97053ec2a47b6e619f632df9547bb009fd0bcc747909f1b7bd4",
+    "pkRm": "b1f1b840de7a3241b02748cf9b05b74dc8c5e8451298738817bd76aa8ebe8c2b",
+    "enc": "a33ec5894b884888c4177f3f30bac108479c558a4fdda0f9c3784bc24561052d",
+    "shared_secret": "531722eccff1646e7bdf7525f64287132ae72be60f584bde0b1f2f50d46b81e1",
+    "key": "e3c785f6d84572322f1aa607238387d2",
+    "base_nonce": "e17d52940ce4ed3ed70b20da",
+    "exporter_secret": "83261136796a19e790a0d326ddb59cd2378c66fe1e27dd6050befd3ec3f4d876b0dbb5c37bb60bc7b48cdfd7c8926b58",
+    "encryptions": [
+      {
+        "aad": "616164",
+        "pt": "706c61696e74657874",
+        "ct": "5ffd90d40dd171ee93d9b75a77385a561ee6589d1bebc5fbbd"
+      },
+      {
+        "aad": "6161642d32",
+        "pt": "7365636f6e64",
+        "ct": "ae607bcc5e44327835bbc5f25ade55496d7f7de062a8"
+      }
+    ],
+    "export": "8a3a167e89dbd111b13cc299d6bcb3aa9f9a9919ad353ede6e3051ea79e3bd53"
+  },
+  {
+    "name": "P-256 + HKDF-SHA384 + AES-256-GCM, AuthPSK",
+    "kem": "DHKEM_P256",
+    "kdf": "HKDF_SHA384",
+    "aead": "AES_256_GCM",
+    "mode": "AUTH_PSK",
+    "ikmR": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "ikmE": "03080d12171c21262b30353a3f44494e53585d62676c71767b80858a8f94999e",
+    "ikmS": "040d161f28313a434c555e677079828b949da6afb8c1cad3dce5eef70009121b",
+    "info": "696e666f",
+    "psk": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "psk_id": "70736b2d6964",
+    "skRm": "c4a9b2ed5595907ca64a481ea78cf93a047ef7153f7d70121b2552b9b6f07cee",
+    "pkRm": "04cfb264d85c7eb276cf60773c461d722e25b64bf345d077c1a8b10c05b8decb45b7ad849cce5e9660102f3f368afd22fe797caf6c3a9cbcbe7657b27bbcddfdb1",
+    "pkSm": "04b36a9b11b1795303979d7c7782c3889346859eb355aa337ebf53f27a4273f64ab7e4d743130c77f216d91c545268f3043e2703551d84307844ada619037ae8bd",
+    "enc": "046bbc3d6177c3b25a40ea2937dc446312e1c7c70b2cdcde5e6ec521721fce2190865ac70cc357193e6f5d3cd6559af5c25090194cf82e1d55780b9e40ef976b81",
+    "shared_secret": "b2591a59fe42e3625f2a0c1dfad3f42da9b838204848b528a6b0d2d7643d282c",
+    "key": "8a1d0c1f06ecd1fef416880aa9dae5b46d3752a4084e92500cb4e206be8a9b95",
+    "base_nonce": "b84abd19093d52c1244905a6",
+    "exporter_secret": "6ad7540dfdce94a9ea3b38494d6202d231211d1e4f03dc7b8c29bf679037fedd524c8911c4e953ce70e0eddfd2cdaaed",
+    "encryptions": [
+      {
+        "aad": "616164",
+        "pt": "706c61696e74657874",
+        "ct": "9ad56cf96b5bfe7dacbdcd7df8f11d52cd4ebe1de3511dd7bf"
+      }
+    ],
+    "export": "a5b3be1f6a288c893e119a4c853d1d440f0f703d3f10f749fd74decd94b6889c"
+  }
+]

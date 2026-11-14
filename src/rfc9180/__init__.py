@@ -1,9 +1,10 @@
 """
-hpke package: Hybrid Public Key Encryption (RFC 9180) primitives and APIs.
+rfc9180 package: Hybrid Public Key Encryption (RFC 9180) primitives and APIs.
 """
 
 from __future__ import annotations
 
+import sys
 from typing import Union
 
 from cryptography.hazmat.primitives.asymmetric.ec import (
@@ -12,7 +13,11 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 )
 from cryptography.hazmat.primitives.asymmetric.x448 import X448PrivateKey, X448PublicKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
-from typing_extensions import TypeAlias
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 from .constants import AEADID, KDFID, KEMID
 from .helpers import append_header, parse_header
@@ -240,7 +245,7 @@ class HPKE:
             Serialized public key as bytes.
         """
         if isinstance(pk, bytes):
-            return pk
+            return self.kem.serialize_public_key(self.kem.deserialize_public_key(pk))
         return self.kem.serialize_public_key(self._deserialize_public_key(pk))
 
     def serialize_private_key(self, sk: HPKEPrivateKey) -> bytes:
@@ -258,7 +263,7 @@ class HPKE:
             Serialized private key as bytes.
         """
         if isinstance(sk, bytes):
-            return sk
+            return self.kem.serialize_private_key(self.kem.deserialize_private_key(sk))
         return self.kem.serialize_private_key(self._deserialize_private_key(sk))
 
     # Single-shot convenience
@@ -336,7 +341,8 @@ class HPKE:
         pt : bytes
             Plaintext to encrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -348,7 +354,7 @@ class HPKE:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         pkR = self._deserialize_public_key(pkR)
         return self._single_shot.seal_psk(pkR, info, aad, pt, psk, psk_id)
@@ -379,7 +385,8 @@ class HPKE:
         ct : bytes
             Ciphertext to decrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
 
@@ -391,7 +398,7 @@ class HPKE:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         OpenError
             If decryption fails.
         """
@@ -491,7 +498,8 @@ class HPKE:
         pt : bytes
             Plaintext to encrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         skS : bytes or Key Object
@@ -505,7 +513,7 @@ class HPKE:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         """
         pkR = self._deserialize_public_key(pkR)
         skS = self._deserialize_private_key(skS)
@@ -538,7 +546,8 @@ class HPKE:
         ct : bytes
             Ciphertext to decrypt.
         psk : bytes
-            Pre-shared key (must have at least 32 bytes of entropy).
+            Pre-shared key. RFC 9180 §9.5 requires at least 32 bytes of entropy,
+            which the caller must supply. This library does not measure entropy.
         psk_id : bytes
             Pre-shared key identifier.
         pkS : bytes or Key Object
@@ -552,7 +561,7 @@ class HPKE:
         Raises
         ------
         ValueError
-            If PSK has insufficient entropy.
+            If ``psk`` and ``psk_id`` are inconsistent with the HPKE mode.
         OpenError
             If decryption fails.
         """

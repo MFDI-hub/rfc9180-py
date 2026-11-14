@@ -23,6 +23,11 @@ def test_setup_suite_selection_roundtrip(kem_id: KEMID, kdf_id: KDFID, aead_id: 
     hpke = create_hpke(kem_id=kem_id, kdf_id=kdf_id, aead_id=aead_id)
     skR, pkR = hpke.generate_key_pair()
     info = b"fuzz-info"
+    if aead_id == AEADID.EXPORT_ONLY:
+        enc, sender = hpke.setup.setup_base_sender(pkR, info)
+        recipient = hpke.setup.setup_base_recipient(enc, skR, info)
+        assert sender.export(b"exp", 16) == recipient.export(b"exp", 16)
+        return
     aad = b"aad"
     pt = b"payload"
     enc, ct = hpke.seal_base(pkR, info, aad, pt)
@@ -90,4 +95,3 @@ def test_end_to_end_pipeline_with_corruption(
         corrupted_ct[0] ^= 0x01
         with pytest.raises(OpenError):
             hpke.open_base(enc, skR, info, aad, bytes(corrupted_ct))
-

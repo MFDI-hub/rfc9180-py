@@ -1,4 +1,8 @@
 import base64
+import binascii
+import re
+
+_B64URL_ALPHABET = re.compile(r"^[A-Za-z0-9_-]*$")
 
 
 def I2OSP(n: int, w: int) -> bytes:
@@ -93,6 +97,8 @@ def base64url_decode(value: str) -> bytes:
     """
     Decode a base64url string (with optional omitted padding).
 
+    Non-alphabet characters are rejected. ``"QUJD!!!!REVG"`` does not decode.
+
     Parameters
     ----------
     value : str
@@ -102,9 +108,18 @@ def base64url_decode(value: str) -> bytes:
     -------
     bytes
         Decoded bytes.
+
+    Raises
+    ------
+    ValueError
+        If ``value`` is not a base64url string.
     """
-    encoded = value.encode("ascii")
-    remainder = len(encoded) % 4
-    if remainder:
-        encoded += b"=" * (4 - remainder)
-    return base64.urlsafe_b64decode(encoded)
+    if not isinstance(value, str) or _B64URL_ALPHABET.fullmatch(value) is None:
+        raise ValueError("Invalid base64url string")
+    if len(value) % 4 == 1:
+        raise ValueError("Invalid base64url string")
+    padded = value + ("=" * (-len(value) % 4))
+    try:
+        return base64.urlsafe_b64decode(padded.encode("ascii"))
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("Invalid base64url string") from exc

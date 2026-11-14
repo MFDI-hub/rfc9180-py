@@ -64,8 +64,9 @@ PSK Mode with Pre-Shared Key
 
    hpke = create_hpke()
 
-   # PSK must have at least 32 bytes of entropy
-   psk = b"0" * 32  # In practice, use cryptographically random bytes
+   # RFC 9180 §9.5: the caller supplies >= 32 bytes of entropy.
+   # The library checks PSK/psk_id consistency only, not entropy.
+   psk = b"0" * 32  # placeholder; use cryptographically random bytes
    psk_id = b"session-12345"
 
    skR, pkR = hpke.generate_key_pair()

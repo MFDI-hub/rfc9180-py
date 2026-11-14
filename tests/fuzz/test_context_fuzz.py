@@ -113,7 +113,7 @@ def test_context_modified_aad_fails(aad: bytes, pt: bytes, tampered_aad: bytes) 
 def test_context_export_properties(exporter_context: bytes, L: int) -> None:
     sender, recipient = make_contexts()
     max_L = 255 * sender.kdf.Nh
-    if L > max_L:
+    if max_L < L:
         with pytest.raises(ValueError):
             sender.export(exporter_context, L)
         return
@@ -121,4 +121,3 @@ def test_context_export_properties(exporter_context: bytes, L: int) -> None:
     r_val = recipient.export(exporter_context, L)
     assert len(s_val) == L
     assert s_val == r_val
-

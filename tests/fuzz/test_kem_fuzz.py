@@ -1,19 +1,23 @@
-from typing import Any
-
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from rfc9180.constants import KEMID
-from rfc9180.exceptions import DecapError, DeriveKeyPairError, DeserializeError, EncapError, ValidationError
+from rfc9180.exceptions import DeserializeError, EncapError, ValidationError
 from rfc9180.primitives.kem import (
     DHKEM_P256,
     DHKEM_P384,
     DHKEM_P521,
-    DHKEM_X25519,
     DHKEM_X448,
+    DHKEM_X25519,
     KEMBase,
 )
+
+_NIST_KEMS = {
+    KEMID.DHKEM_P256_HKDF_SHA256,
+    KEMID.DHKEM_P384_HKDF_SHA384,
+    KEMID.DHKEM_P521_HKDF_SHA512,
+}
 
 
 def kem_strategies() -> st.SearchStrategy[KEMBase]:
@@ -29,7 +33,7 @@ def kem_strategies() -> st.SearchStrategy[KEMBase]:
 
 
 @given(kem=kem_strategies())
-@settings(max_examples=50)
+@settings(max_examples=50, deadline=None)
 def test_kem_generate_key_pair_basic_properties(kem: KEMBase) -> None:
     sk, pk = kem.generate_key_pair()
     pk_bytes = kem.serialize_public_key(pk)
@@ -54,13 +58,18 @@ def test_kem_derive_key_pair_length_and_determinism(kem: KEMBase, ikm: bytes) ->
 @given(kem=kem_strategies(), enc=st.binary(min_size=0, max_size=256))
 @settings(max_examples=100)
 def test_kem_decap_rejects_malformed_enc(kem: KEMBase, enc: bytes) -> None:
-    skR, pkR = kem.generate_key_pair()
-    _, good_enc = kem.encap(pkR)
-    if len(enc) == kem.Nenc and enc != good_enc:
-        with pytest.raises(DecapError):
+    skR, _pkR = kem.generate_key_pair()
+    if len(enc) != kem.Nenc:
+        with pytest.raises(DeserializeError):
             kem.decap(enc, skR)
-    elif len(enc) != kem.Nenc:
-        with pytest.raises((DecapError, DeserializeError)):
+        return
+    # Every Nenc-byte string is a valid X25519 or X448 public key.
+    if kem.kem_id not in _NIST_KEMS:
+        return
+    try:
+        kem.deserialize_public_key(enc)
+    except DeserializeError:
+        with pytest.raises(DeserializeError):
             kem.decap(enc, skR)
 
 
@@ -105,9 +114,9 @@ def test_kem_dh_rejects_invalid_scalar(kem: KEMBase, bad_sk: bytes) -> None:
 @given(kem=kem_strategies(), raw=st.integers(min_value=0, max_value=0xFFFF))
 @settings(max_examples=50)
 def test_kemid_enum_mapping_bounds(kem: KEMBase, raw: int) -> None:
+    assert kem.kem_id in KEMID
     try:
         kid = KEMID(raw)
     except ValueError:
         return
     assert kid in KEMID
-

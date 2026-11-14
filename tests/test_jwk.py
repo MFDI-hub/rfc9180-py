@@ -119,3 +119,22 @@ def test_jwk_integration_seal_open_base_x25519() -> None:
     enc, ct = hpke.seal_base(pkr, info, aad, pt)
     out = hpke.open_base(enc, skr, info, aad, ct)
     assert out == pt
+
+
+def test_to_public_bytes_from_private_key() -> None:
+    hpke = create_hpke()
+    sk, pk = hpke.generate_key_pair()
+    wrapped = KEMKey.from_pyca_cryptography_key(sk)
+    assert wrapped.to_public_bytes() == hpke.serialize_public_key(pk)
+
+
+def test_from_pem_rejects_encrypted_private_key() -> None:
+    hpke = create_hpke()
+    sk, _pk = hpke.generate_key_pair()
+    encrypted = sk.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.BestAvailableEncryption(b"password"),
+    )
+    with pytest.raises(ValueError, match="Encrypted"):
+        KEMKey.from_pem(encrypted)

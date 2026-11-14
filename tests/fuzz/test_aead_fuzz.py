@@ -5,7 +5,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from rfc9180.constants import AEADID
-from rfc9180.exceptions import MessageLimitReachedError, OpenError
+from rfc9180.exceptions import OpenError
 from rfc9180.primitives.aead import AEADBase
 
 
@@ -63,9 +63,7 @@ def test_aead_ciphertext_tampering_fails(aead: AEADBase, aad: bytes, pt: bytes) 
     bad_aad=st.binary(min_size=0, max_size=64),
 )
 @settings(max_examples=100)
-def test_aead_aad_tampering_fails(
-    aead: AEADBase, aad: bytes, pt: bytes, bad_aad: bytes
-) -> None:
+def test_aead_aad_tampering_fails(aead: AEADBase, aad: bytes, pt: bytes, bad_aad: bytes) -> None:
     if aad == bad_aad:
         pytest.skip("Bad AAD equals original; nothing to test")
     key = secrets.token_bytes(aead.Nk)
@@ -81,4 +79,3 @@ def test_aead_export_only_rejects_seal_open() -> None:
         aead.seal(b"", b"", b"", b"")
     with pytest.raises(ValueError):
         aead.open(b"", b"", b"", b"")
-
