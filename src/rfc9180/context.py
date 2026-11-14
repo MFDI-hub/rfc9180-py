@@ -52,11 +52,18 @@ class Context:
     seq : int
         Current sequence number.
 
-    ``seal`` and ``open`` hold a lock around nonce allocation, so concurrent
-    calls on one context cannot reuse a nonce. Check the message limit before
-    invoking the AEAD: a rejected call does not encrypt and does not advance
-    ``seq``. AES-GCM stops at 2^32 messages (NIST SP 800-38D). ChaCha20-Poly1305
-    stops at nonce exhaustion. Python ``bytes`` are not zeroized on deletion.
+    ``seal`` and ``open`` hold ``_seq_lock`` across the limit check, nonce
+    allocation, the AEAD call, and the sequence increment. The AEAD stays
+    inside the lock so two callers cannot be handed the same nonce; moving
+    encryption outside the lock would reintroduce nonce reuse. A rejected
+    call does not encrypt and does not advance ``seq``. AES-GCM stops at
+    2^32 messages. That cap follows the invocation bound in NIST SP 800-38D
+    §8.3, which is written for random nonces. HPKE nonces are a counter XOR
+    a secret base, so they are unique, and the cap is conservative hardening
+    beyond RFC 9180 §5.2. ChaCha20-Poly1305 rejects ``seq >= 2^96 - 1`` before
+    sealing, so the last nonce value is unused: 2^96 - 1 messages, one short
+    of the RFC pseudocode, which seals with that nonce and then raises.
+    Python ``bytes`` are not zeroized on deletion.
     """
 
     def __init__(
@@ -95,20 +102,6 @@ class Context:
         """
         seq_bytes = I2OSP(seq, self.aead.Nn)
         return xor_bytes(self.base_nonce, seq_bytes)
-
-    def increment_seq(self) -> None:
-        """
-        Increment the sequence number.
-
-        Raises
-        ------
-        MessageLimitReachedError
-            If sequence number would overflow.
-        """
-        with self._seq_lock:
-            if self.seq >= self.aead.max_seq:
-                raise MessageLimitReachedError("Sequence number overflow")
-            self.seq += 1
 
     def seal(self, aad: bytes, pt: bytes) -> bytes:
         """

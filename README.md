@@ -2,6 +2,8 @@
 
 A Python implementation of **Hybrid Public Key Encryption (HPKE)** as specified in [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180.txt).
 
+**0.3.0 on PyPI still has the private-key serialization bug.** Derived X25519 and X448 secrets were cached by `id()`, so a later key could serialize as an earlier key's secret bytes, and freed keys could leave those bytes retained. That release also shares one nonce across concurrent `seal` calls, and `seal` at the sequence limit encrypts before it raises, so a retry repeats the nonce. Install **0.4.0**. See [CHANGELOG.md](CHANGELOG.md).
+
 ## Overview
 
 HPKE provides a variant of public key encryption for arbitrary-sized plaintexts. It combines an asymmetric Key Encapsulation Mechanism (KEM), a Key Derivation Function (KDF), and an Authenticated Encryption with Associated Data (AEAD) algorithm to provide secure encryption with optional authentication.
@@ -454,8 +456,8 @@ Per RFC 9180 §7.1, each KEM mandates a specific hash/KDF. This implementation d
 
 - **PSK entropy**: RFC 9180 §9.5 requires at least 32 bytes of entropy. The library enforces `VerifyPSKInputs` only (a PSK and its identifier are both present or both absent, and they match the mode). `b"\x00" * 32` is accepted. Length is not entropy.
 - **Key reuse**: Ephemeral keys are generated fresh for each encryption
-- **Nonce management**: `Context.seal` and `Context.open` take a lock around the sequence counter, so concurrent calls on one context cannot reuse a nonce. The limit is checked before the AEAD runs; a rejected call does not return ciphertext and does not advance the counter.
-- **AEAD usage limits**: AES-GCM contexts stop at 2^32 messages per key (NIST SP 800-38D). ChaCha20-Poly1305 contexts stop at nonce exhaustion (2^96 - 1). RFC 9180 §5.2 only requires the nonce-space check; the AES-GCM cap is stricter.
+- **Nonce management**: `Context.seal` and `Context.open` hold a lock across the limit check, nonce allocation, the AEAD call, and the increment. Concurrent calls on one context get distinct nonces. The lock stays held during encryption so a later edit cannot release it early. The limit is checked before the AEAD runs; a rejected call does not return ciphertext and does not advance the counter. There is no public method that advances the counter on its own.
+- **AEAD usage limits**: AES-GCM contexts stop at 2^32 messages per key. SP 800-38D §8.3 states that bound for random nonces; HPKE nonces are unique, so the cap is conservative hardening past the nonce-space check in RFC 9180 §5.2. ChaCha20-Poly1305 rejects the final nonce before sealing (`seq >= 2^96 - 1`), which allows 2^96 − 1 messages. The RFC pseudocode seals with that last nonce and then raises, so this bound is one message shorter on purpose.
 - **Validation**: KEM deserialization and validation errors keep their RFC 9180 §8 types (`DeserializeError`, `ValidationError`) instead of being rewritten as `EncapError` or `DecapError`.
 - **Key serialization**: X25519 and X448 private keys are serialized with `private_bytes_raw()`. There is no process-wide cache of secret bytes.
 - **Secret lifetime**: Python `bytes` are immutable and are not zeroized when a key object is deleted.
@@ -486,11 +488,11 @@ except OpenError:
 
 ## Versioning
 
-Use **`scripts/update_version.py`** to bump the version. It updates **`pyproject.toml`** and **`src/rfc9180/__init__.py`** (`__version__`); do not edit those version strings manually. Docs read the version from `pyproject.toml`.
+Use **`scripts/update_version.py`** to bump the version. It updates **`pyproject.toml`** and **`src/rfc9180/__init__.py`** (`__version__`). Docs read the version from `pyproject.toml`. The current release is 0.4.0.
 
 ```bash
-uv run python scripts/update_version.py 0.2.1
-uv run python scripts/update_version.py 0.3.0 --dry-run
+uv run python scripts/update_version.py 0.4.1
+uv run python scripts/update_version.py 0.4.1 --dry-run
 ```
 
 ## License

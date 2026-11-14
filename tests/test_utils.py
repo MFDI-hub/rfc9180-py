@@ -36,3 +36,11 @@ def test_base64url_decode_rejects_non_alphabet():
     with pytest.raises(ValueError):
         base64url_decode("QUJD!!!!REVG")
     assert base64url_decode("QUJDREVG") == b"ABCDEF"
+
+
+def test_base64url_decode_unpadded_canonical():
+    with pytest.raises(ValueError):
+        base64url_decode("QUJD=")
+    with pytest.raises(ValueError):
+        base64url_decode("QR")
+    assert base64url_decode("QQ") == b"A"

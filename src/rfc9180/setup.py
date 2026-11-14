@@ -99,7 +99,7 @@ class HPKESetup:
 
     def key_schedule(
         self,
-        role: str,
+        role: Literal["S", "R"],
         mode: HPKEMode,
         shared_secret: bytes,
         info: bytes,
@@ -111,7 +111,7 @@ class HPKESetup:
 
         Parameters
         ----------
-        role : str
+        role : {"S", "R"}
             Context role ('S' for sender, 'R' for recipient).
         mode : HPKEMode
             HPKE mode.

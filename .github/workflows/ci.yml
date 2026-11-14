@@ -52,7 +52,7 @@ jobs:
               run: uv run pytest tests/ -v
 
     checks:
-        name: Checks (Ruff, Mypy, Docs)
+        name: Checks (Ruff, ty, Docs)
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -76,8 +76,8 @@ jobs:
             - name: Run ruff format
               run: uv run ruff format --check .
 
-            - name: Run mypy
-              run: uv run mypy src/rfc9180
+            - name: Run ty
+              run: uv run ty check
 
             - name: Build docs
               run: |

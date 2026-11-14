@@ -20,6 +20,8 @@ coverage.xml
 .venv
 dist
 *.md
+!README.md
+!CHANGELOG.md
 reports/
 docs/_build/
 .pypirc
@@ -27,4 +29,5 @@ docs/_build/
 *.pypi-token
 build/
 *.egg-info/
-scripts/
+scripts/*
+!scripts/update_version.py

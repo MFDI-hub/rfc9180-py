@@ -93,16 +93,26 @@ def concat(*args: bytes) -> bytes:
     return b"".join(args)
 
 
+_B64URL_INDEX = {
+    char: index
+    for index, char in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+}
+
+
 def base64url_decode(value: str) -> bytes:
     """
-    Decode a base64url string (with optional omitted padding).
+    Decode an unpadded base64url string.
 
-    Non-alphabet characters are rejected. ``"QUJD!!!!REVG"`` does not decode.
+    This is the JWK alphabet: ``A-Z``, ``a-z``, ``0-9``, ``-``, ``_``, with
+    no ``=`` padding. ``"QUJD="`` is rejected. Non-alphabet characters are
+    rejected, so ``"QUJD!!!!REVG"`` does not decode. A final quantum whose
+    unused bits are non-zero is rejected (RFC 4648 §3.5); ``"QR"`` is rejected
+    and ``"QQ"`` decodes to ``b"A"``.
 
     Parameters
     ----------
     value : str
-        Base64url-encoded string.
+        Unpadded base64url-encoded string.
 
     Returns
     -------
@@ -112,11 +122,16 @@ def base64url_decode(value: str) -> bytes:
     Raises
     ------
     ValueError
-        If ``value`` is not a base64url string.
+        If ``value`` is not canonical unpadded base64url.
     """
     if not isinstance(value, str) or _B64URL_ALPHABET.fullmatch(value) is None:
         raise ValueError("Invalid base64url string")
-    if len(value) % 4 == 1:
+    remainder = len(value) % 4
+    if remainder == 1:
+        raise ValueError("Invalid base64url string")
+    if remainder == 2 and _B64URL_INDEX[value[-1]] & 0x0F:
+        raise ValueError("Invalid base64url string")
+    if remainder == 3 and _B64URL_INDEX[value[-1]] & 0x03:
         raise ValueError("Invalid base64url string")
     padded = value + ("=" * (-len(value) % 4))
     try:

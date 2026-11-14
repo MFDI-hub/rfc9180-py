@@ -30,7 +30,7 @@ from .single_shot import HPKESingleShot
 from .types import KEMPrivateKey, KEMPublicKey
 
 # Updated by scripts/update_version.py; do not edit manually.
-__version__: str = "0.3.0"
+__version__: str = "0.4.0"
 
 HPKEPublicKey: TypeAlias = Union[bytes, KEMPublicKey, KEMKeyInterface]
 HPKEPrivateKey: TypeAlias = Union[bytes, KEMPrivateKey, KEMKeyInterface]

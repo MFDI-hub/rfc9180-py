@@ -2,8 +2,9 @@
 
 The expected bytes were produced with an HKDF implementation written from
 RFC 9180 using hashlib and hmac, plus cryptography only for the group
-operation and the AEAD. They are pinned here so a later refactor cannot
-change X448, HKDF-SHA384, or P-256 AuthPSK without a failing test.
+operation and the AEAD. ``extra-suites.json`` pins X448, HKDF-SHA384, and
+P-256 AuthPSK. ``extra-matrix.json`` pins X448, P-384, and P-521 across
+HKDF-SHA256/384/512 and all four HPKE modes.
 """
 
 import json
@@ -14,15 +15,18 @@ import pytest
 from rfc9180.constants import AEADID, KDFID, HPKEMode
 from rfc9180.primitives.aead import AEADBase
 from rfc9180.primitives.kdf import KDFBase
-from rfc9180.primitives.kem import DHKEM_P256, DHKEM_X448, DHKEM_X25519
+from rfc9180.primitives.kem import DHKEM_P256, DHKEM_P384, DHKEM_P521, DHKEM_X448, DHKEM_X25519
 from rfc9180.setup import HPKESetup
 
 _KEMS = {
     "DHKEM_X25519": DHKEM_X25519,
     "DHKEM_X448": DHKEM_X448,
     "DHKEM_P256": DHKEM_P256,
+    "DHKEM_P384": DHKEM_P384,
+    "DHKEM_P521": DHKEM_P521,
 }
 _KDFS = {
+    "HKDF_SHA256": KDFID.HKDF_SHA256,
     "HKDF_SHA384": KDFID.HKDF_SHA384,
     "HKDF_SHA512": KDFID.HKDF_SHA512,
 }
@@ -33,17 +37,23 @@ _AEADS = {
 }
 _MODES = {
     "BASE": HPKEMode.MODE_BASE,
+    "PSK": HPKEMode.MODE_PSK,
+    "AUTH": HPKEMode.MODE_AUTH,
     "AUTH_PSK": HPKEMode.MODE_AUTH_PSK,
 }
 
 
-def _load() -> list[dict]:
-    path = os.path.join(os.path.dirname(__file__), "..", "vectors", "extra-suites.json")
+def _load(name: str) -> list[dict]:
+    path = os.path.join(os.path.dirname(__file__), "..", "vectors", name)
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
-@pytest.mark.parametrize("vec", _load(), ids=lambda vec: vec["name"])
+def _cases() -> list[dict]:
+    return _load("extra-suites.json") + _load("extra-matrix.json")
+
+
+@pytest.mark.parametrize("vec", _cases(), ids=lambda vec: vec["name"])
 def test_extra_suite_known_answers(vec: dict) -> None:
     kem = _KEMS[vec["kem"]]()
     mode = _MODES[vec["mode"]]
@@ -60,7 +70,7 @@ def test_extra_suite_known_answers(vec: dict) -> None:
     assert kem.serialize_public_key(pk_r) == bytes.fromhex(vec["pkRm"])
     assert enc == bytes.fromhex(vec["enc"])
 
-    if mode == HPKEMode.MODE_AUTH_PSK:
+    if mode in (HPKEMode.MODE_AUTH, HPKEMode.MODE_AUTH_PSK):
         _sk_s, pk_s = kem.derive_key_pair(bytes.fromhex(vec["ikmS"]))
         assert kem.serialize_public_key(pk_s) == bytes.fromhex(vec["pkSm"])
         shared = kem.auth_decap(enc, sk_r, pk_s)

@@ -56,6 +56,27 @@ def test_header_rejects_ciphertext_shorter_than_tag():
         pass
 
 
+def test_header_rejects_unknown_kdf_and_mode():
+    hpke = HPKE(KEMID.DHKEM_X25519_HKDF_SHA256, KDFID.HKDF_SHA256, AEADID.AES_128_GCM)
+    enc = b"\x02" * hpke.kem.Nenc
+    ct = b"\x03" * hpke.aead.Nt
+    bad_kdf = append_header(
+        enc, ct, int(hpke.kem_id), 0x9999, int(hpke.aead_id), int(HPKEMode.MODE_BASE)
+    )
+    try:
+        parse_header(bad_kdf, enc_len=hpke.kem.Nenc)
+        raise AssertionError("Expected unknown kdf_id to fail")
+    except ValueError as exc:
+        assert "KDF" in str(exc)
+
+    bad_mode = append_header(enc, ct, int(hpke.kem_id), int(hpke.kdf_id), int(hpke.aead_id), 0x07)
+    try:
+        parse_header(bad_mode, enc_len=hpke.kem.Nenc)
+        raise AssertionError("Expected unknown mode to fail")
+    except ValueError as exc:
+        assert "mode" in str(exc)
+
+
 def test_header_errors():
     # Too short
     try:

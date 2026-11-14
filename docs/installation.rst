@@ -26,7 +26,7 @@ Install from source
 Development and documentation
 -----------------------------
 
-To install with development tools (pytest, mypy, ruff):
+To install with development tools (pytest, ty, ruff):
 
 .. code-block:: bash
 

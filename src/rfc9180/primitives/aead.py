@@ -34,8 +34,11 @@ class AEADBase:
         Cipher factory function.
     max_seq : int
         First sequence number that ``Context`` must reject.
-        AES-GCM uses 2^32 (NIST SP 800-38D: at most 2^32 encryptions per key).
-        Other AEADs use the nonce-space limit from RFC 9180 §5.2.
+        AES-GCM uses 2^32. SP 800-38D §8.3 states that bound for random
+        nonces; HPKE's counter-XOR nonces are unique, so the cap is
+        conservative hardening beyond RFC 9180 §5.2. ChaCha20-Poly1305 uses
+        ``2^96 - 1``, one nonce short of the RFC pseudocode, which seals with
+        the final nonce and then raises.
     """
 
     def __init__(self, aead_id: AEADID) -> None:
@@ -47,7 +50,8 @@ class AEADBase:
         self.cipher = self._get_cipher()
         nonce_space = (1 << (8 * self.Nn)) - 1 if self.Nn > 0 else 0
         if aead_id in (AEADID.AES_128_GCM, AEADID.AES_256_GCM):
-            # NIST SP 800-38D §8.3: do not exceed 2^32 invocations of one key.
+            # SP 800-38D §8.3 limits random-nonce AES-GCM to 2^32 invocations.
+            # HPKE nonces are unique, so this is a stricter local cap.
             self.max_seq = min(nonce_space, 1 << 32)
         else:
             self.max_seq = nonce_space

@@ -60,7 +60,8 @@ def test_context_sequence_overflow_raises() -> None:
     sender, _ = make_contexts()
     sender.seq = sender.aead.max_seq
     with pytest.raises(MessageLimitReachedError):
-        sender.increment_seq()
+        sender.seal(b"", b"pt")
+    assert sender.seq == sender.aead.max_seq
 
 
 @given(
